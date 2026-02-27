@@ -1,6 +1,19 @@
 ---
 layout: none
 ---
+<script>
+  // This tiny script stops the browser from rendering the HTML 
+  // and forces it to show the code as plain text.
+  window.onload = function() {
+    document.body.style.whiteSpace = "pre";
+    document.body.style.fontFamily = "monospace";
+    document.body.style.backgroundColor = "#0b0e14";
+    document.body.style.color = "#f3f4f6";
+    document.body.style.padding = "20px";
+    document.body.textContent = document.documentElement.outerHTML;
+  };
+</script>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -10,163 +23,56 @@ layout: none
     <style>
         :root {
             --primary: #6366f1;
-            --primary-hover: #4f46e5;
             --bg: #0b0e14;
             --card: #151921;
             --text: #f3f4f6;
             --input: #1f2937;
             --border: #374151;
         }
-
         body {
             margin: 0;
-            padding: 0;
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
             background-color: var(--bg);
-            font-family: 'Inter', system-ui, -apple-system, sans-serif;
-            color: var(--text);
+            font-family: sans-serif;
         }
-
         .login-container {
             background: var(--card);
-            padding: 2.5rem;
+            padding: 2rem;
             border-radius: 1rem;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
             width: 100%;
-            max-width: 400px;
+            max-width: 350px;
             border: 1px solid var(--border);
-        }
-
-        .header {
             text-align: center;
-            margin-bottom: 2rem;
         }
-
-        .header h1 {
-            font-size: 1.875rem;
-            font-weight: 700;
-            margin: 0;
-            color: #fff;
-        }
-
-        .header p {
-            color: #9ca3af;
-            margin-top: 0.5rem;
-        }
-
-        .form-group {
-            margin-bottom: 1.25rem;
-        }
-
-        label {
-            display: block;
-            font-size: 0.875rem;
-            font-weight: 500;
-            margin-bottom: 0.5rem;
-        }
-
         input {
             width: 100%;
-            padding: 0.75rem 1rem;
-            background-color: var(--input);
+            padding: 10px;
+            margin: 10px 0;
+            background: var(--input);
             border: 1px solid var(--border);
-            border-radius: 0.5rem;
             color: white;
-            font-size: 1rem;
-            box-sizing: border-box;
-            transition: all 0.2s;
+            border-radius: 5px;
         }
-
-        input:focus {
-            outline: none;
-            border-color: var(--primary);
-            ring: 2px solid var(--primary);
-        }
-
-        .options {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 0.875rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .options a {
-            color: var(--primary);
-            text-decoration: none;
-        }
-
-        .options a:hover {
-            text-decoration: underline;
-        }
-
         button {
             width: 100%;
-            padding: 0.75rem;
-            background-color: var(--primary);
+            padding: 10px;
+            background: var(--primary);
             color: white;
             border: none;
-            border-radius: 0.5rem;
-            font-size: 1rem;
-            font-weight: 600;
+            border-radius: 5px;
             cursor: pointer;
-            transition: background-color 0.2s;
-        }
-
-        button:hover {
-            background-color: var(--primary-hover);
-        }
-
-        .footer {
-            margin-top: 1.5rem;
-            text-align: center;
-            font-size: 0.875rem;
-            color: #9ca3af;
-        }
-
-        .footer a {
-            color: var(--primary);
-            font-weight: 600;
-            text-decoration: none;
         }
     </style>
 </head>
 <body>
-
     <div class="login-container">
-        <div class="header">
-            <h1>pxplay</h1>
-            <p>Sign in to your account</p>
-        </div>
-
-        <form>
-            <div class="form-group">
-                <label for="email">Email address</label>
-                <input type="email" id="email" placeholder="name@company.com" required>
-            </div>
-
-            <div class="form-group">
-                <label for="password">Password</label>
-                <input type="password" id="password" placeholder="••••••••" required>
-            </div>
-
-            <div class="options">
-                <label style="display: flex; align-items: center; cursor: pointer;">
-                    <input type="checkbox" style="width: auto; margin-right: 0.5rem;"> Remember me
-                </label>
-                <a href="#">Forgot password?</a>
-            </div>
-
-            <button type="submit">Sign in</button>
-        </form>
-
-        <div class="footer">
-            Don't have an account? <a href="#">Create one</a>
-        </div>
+        <h1>pxplay</h1>
+        <input type="email" placeholder="Email">
+        <input type="password" placeholder="Password">
+        <button>Sign In</button>
     </div>
-
 </body>
 </html>
