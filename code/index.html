@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>pxplay | Login Template Selection</title>
+    <title>pxplay | Code Library</title>
     <style>
         :root {
             --primary: #6366f1;
@@ -11,95 +11,135 @@
             --card: #151921;
             --text: #f3f4f6;
             --border: #374151;
+            --input: #1f2937;
         }
 
         body {
             margin: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
+            padding: 0;
             background-color: var(--bg);
-            font-family: 'Inter', sans-serif;
+            font-family: 'Inter', -apple-system, sans-serif;
             color: var(--text);
-        }
-
-        .hub-container {
-            text-align: center;
-            background: var(--card);
-            padding: 3rem;
-            border-radius: 1.5rem;
-            border: 1px solid var(--border);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
-            max-width: 500px;
-        }
-
-        h1 { font-size: 2rem; margin-bottom: 10px; }
-        p { color: #9ca3af; margin-bottom: 2.5rem; }
-
-        .choice-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
-
-        .choice-card {
-            background: #1f2937;
-            padding: 20px;
-            border-radius: 12px;
-            border: 1px solid var(--border);
-            text-decoration: none;
-            color: white;
-            transition: all 0.2s ease;
             display: flex;
             flex-direction: column;
             align-items: center;
+            min-height: 100vh;
         }
 
-        .choice-card:hover {
-            border-color: var(--primary);
-            transform: translateY(-5px);
-            background: #262f3f;
+        /* Navigation / Header */
+        header {
+            width: 100%;
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-sizing: border-box;
+            background: var(--card);
         }
 
-        .choice-title {
-            font-weight: 700;
-            margin-bottom: 5px;
-            margin-top: 10px;
+        .logo {
+            font-weight: 800;
+            font-size: 1.2rem;
+            color: #fff;
+            text-decoration: none;
         }
 
-        .choice-desc {
-            font-size: 0.8rem;
-            color: #9ca3af;
+        /* Dropdown Styling */
+        .dropdown {
+            position: relative;
+            display: inline-block;
         }
 
-        .btn-label {
-            margin-top: 15px;
+        .dropbtn {
+            background-color: var(--input);
+            color: white;
+            padding: 10px 20px;
             font-size: 0.9rem;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+
+        .dropbtn:hover {
+            border-color: var(--primary);
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            right: 0;
+            background-color: var(--card);
+            min-width: 160px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.5);
+            z-index: 1;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            margin-top: 5px;
+        }
+
+        .dropdown-content a {
+            color: var(--text);
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            font-size: 0.85rem;
+            transition: background 0.2s;
+        }
+
+        .dropdown-content a:hover {
+            background-color: var(--input);
             color: var(--primary);
-            font-weight: 600;
+        }
+
+        .dropdown:hover .dropdown-content {
+            display: block;
+        }
+
+        /* Main Content */
+        .main-content {
+            max-width: 800px;
+            padding: 60px 20px;
+            text-align: center;
+        }
+
+        h1 { font-size: 2.5rem; margin-bottom: 15px; }
+        p { color: #9ca3af; line-height: 1.6; font-size: 1.1rem; }
+
+        .tag {
+            background: var(--primary);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            text-transform: uppercase;
         }
     </style>
 </head>
 <body>
 
-    <div class="hub-container">
-        <h1>Login Template</h1>
-        <p>Choose how you want to view this component</p>
-
-        <div class="choice-grid">
-            <a href="templates/html/login-template.html" class="choice-card">
-                <div class="choice-title">Live Preview</div>
-                <div class="choice-desc">View the functional rendered login screen</div>
-                <div class="btn-label">View Demo</div>
-            </a>
-
-            <a href="templates/raw/login-template.html" class="choice-card">
-                <div class="choice-title">Raw Code</div>
-                <div class="choice-desc">View the source code for copying</div>
-                <div class="btn-label">Get Code</div>
-            </a>
+    <header>
+        <a href="/" class="logo">pxplay</a>
+        
+        <div class="dropdown">
+            <button class="dropbtn">View Template Options</button>
+            <div class="dropdown-content">
+                <a href="templates/html/login-template.html">Live Preview</a>
+                <a href="templates/raw/login-template.html">Raw Source Code</a>
+            </div>
         </div>
+    </header>
+
+    <div class="main-content">
+        <span class="tag">Templates</span>
+        <h1>Login Screen Boilerplate</h1>
+        <p>
+            A high-quality, responsive login screen built with modern CSS variables. 
+            Designed to be easily integrated into any project using the pxplay ecosystem.
+            Use the dropdown in the top right to toggle between a live demo and the raw source code.
+        </p>
     </div>
 
 </body>
