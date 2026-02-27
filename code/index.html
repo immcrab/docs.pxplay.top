@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>pxplay | Login Template Selection</title>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --bg: #0b0e14;
+            --card: #151921;
+            --text: #f3f4f6;
+            --border: #374151;
+        }
+
+        body {
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: var(--bg);
+            font-family: 'Inter', sans-serif;
+            color: var(--text);
+        }
+
+        .hub-container {
+            text-align: center;
+            background: var(--card);
+            padding: 3rem;
+            border-radius: 1.5rem;
+            border: 1px solid var(--border);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+            max-width: 500px;
+        }
+
+        h1 { font-size: 2rem; margin-bottom: 10px; }
+        p { color: #9ca3af; margin-bottom: 2.5rem; }
+
+        .choice-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .choice-card {
+            background: #1f2937;
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            text-decoration: none;
+            color: white;
+            transition: all 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .choice-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-5px);
+            background: #262f3f;
+        }
+
+        .choice-title {
+            font-weight: 700;
+            margin-bottom: 5px;
+            margin-top: 10px;
+        }
+
+        .choice-desc {
+            font-size: 0.8rem;
+            color: #9ca3af;
+        }
+
+        .btn-label {
+            margin-top: 15px;
+            font-size: 0.9rem;
+            color: var(--primary);
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="hub-container">
+        <h1>Login Template</h1>
+        <p>Choose how you want to view this component</p>
+
+        <div class="choice-grid">
+            <a href="html/login-template.html" class="choice-card">
+                <div class="choice-title">Live Preview</div>
+                <div class="choice-desc">View the functional rendered login screen</div>
+                <div class="btn-label">View Demo</div>
+            </a>
+
+            <a href="raw/login-template.html" class="choice-card">
+                <div class="choice-title">Raw Code</div>
+                <div class="choice-desc">View the source code for copying</div>
+                <div class="btn-label">Get Code</div>
+            </a>
+        </div>
+    </div>
+
+</body>
+</html>
