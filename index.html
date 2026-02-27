@@ -17,7 +17,7 @@
         #edit-content a { color: #2563eb; text-decoration: underline; }
 
         /* Image Resizing */
-        .resizable-img { position: relative; display: inline-block; margin: 15px 0; line-height: 0; cursor: default; }
+        .resizable-img { position: relative; display: inline-block; margin: 15px 0; line-height: 0; cursor: default; max-width: 100%; }
         .resizable-img img { width: 100%; height: auto; border-radius: 8px; display: block; pointer-events: none; }
         .resizable-img.selected { outline: 3px solid #3b82f6; }
         .resize-handle { 
@@ -51,7 +51,7 @@
     </div>
 
     <div id="custom-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden z-[80] flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl p-8 max-w-sm w/full shadow-2xl">
+        <div class="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl">
             <h3 id="modal-title" class="text-xl font-bold text-slate-800 mb-2"></h3>
             <p id="modal-desc" class="text-slate-500 text-sm mb-6"></p>
             <input id="modal-input" type="text" class="hidden w-full p-4 border rounded-xl mb-6 outline-none focus:ring-2 ring-blue-500" placeholder="Paste link here...">
@@ -68,14 +68,13 @@
             <div class="space-y-3">
                 <button class="enhance-type-btn w-full bg-slate-100 hover:bg-blue-100 text-slate-800 px-4 py-3 rounded-xl text-left font-semibold transition" data-type="email">Email</button>
                 <button class="enhance-type-btn w-full bg-slate-100 hover:bg-blue-100 text-slate-800 px-4 py-3 rounded-xl text-left font-semibold transition" data-type="essay">Essay</button>
-                <button class="enhance-type-btn w/full bg-slate-100 hover:bg-blue-100 text-slate-800 px-4 py-3 rounded-xl text-left font-semibold transition" data-type="blog">Blog Post</button>
-                <button class="enhance-type-btn w/full bg-slate-100 hover:bg-blue-100 text-slate-800 px-4 py-3 rounded-xl text-left font-semibold transition" data-type="formal">Formal Document</button>
-                <button class="enhance-type-btn w/full bg-slate-100 hover:bg-blue-100 text-slate-800 px-4 py-3 rounded-xl text-left font-semibold transition" data-type="notes">Notes</button>
+                <button class="enhance-type-btn w-full bg-slate-100 hover:bg-blue-100 text-slate-800 px-4 py-3 rounded-xl text-left font-semibold transition" data-type="blog">Blog Post</button>
+                <button class="enhance-type-btn w-full bg-slate-100 hover:bg-blue-100 text-slate-800 px-4 py-3 rounded-xl text-left font-semibold transition" data-type="formal">Formal Document</button>
+                <button class="enhance-type-btn w-full bg-slate-100 hover:bg-blue-100 text-slate-800 px-4 py-3 rounded-xl text-left font-semibold transition" data-type="notes">Notes</button>
             </div>
-            <button id="enhance-cancel" class="w/full mt-4 text-slate-400 font-bold text-sm hover:text-slate-600">Cancel</button>
+            <button id="enhance-cancel" class="w-full mt-4 text-slate-400 font-bold text-sm hover:text-slate-600">Cancel</button>
         </div>
     </div>
-
 
     <nav id="main-nav" class="hidden bg-white border-b px-8 py-4 flex justify-between items-center sticky top-0 z-10">
         <h2 class="text-xl font-black text-slate-800 uppercase tracking-tighter">Owen's docs</h2>
@@ -100,8 +99,9 @@
                 <button id="close-editor" class="text-slate-400 hover:text-slate-900 text-xl px-2"><i class="fas fa-arrow-left"></i></button>
                 <input id="edit-title" type="text" class="text-xl font-bold outline-none w-full border-none" placeholder="Untitled">
             </div>
-            <div class="flex items-center gap-6">
+            <div class="flex items-center gap-4">
                 <div id="save-indicator" class="text-[9px] font-black text-slate-400">SAVED</div>
+                <button id="top-share-btn" class="hidden bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-bold transition hover:bg-blue-700">Share</button>
                 <button id="export-pdf-btn" class="bg-slate-100 hover:bg-slate-200 px-5 py-2 rounded-xl text-xs font-bold text-slate-700 transition">PDF</button>
             </div>
         </div>
@@ -167,6 +167,7 @@
         const ADMIN_EMAIL = 'imcrabfr@gmail.com';
         const GROQ_API_KEY = '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';
         const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
+        
         let currentDocId = null;
         let currentDocTitle = null;
         let currentUnsub = null;
@@ -174,7 +175,7 @@
         let saveTimer = null;
         let aiProcessing = false;
 
-        // --- Custom Logic ---
+        // --- Utility Functions ---
         function showToast(m) {
             const c = document.getElementById('toast-container');
             const t = document.createElement('div');
@@ -195,13 +196,13 @@
             document.getElementById('modal-cancel').onclick = () => m.classList.add('hidden');
         }
 
-        // --- Auth ---
         function getDocNameFromUrl() {
             const path = window.location.pathname;
             const match = path.match(/\/([^/]+)\/?$/);
             return match ? decodeURIComponent(match[1]) : null;
         }
 
+        // --- Auth & Navigation ---
         onAuthStateChanged(auth, (user) => {
             const urlDocName = getDocNameFromUrl();
             if (user && user.email === ADMIN_EMAIL) {
@@ -209,8 +210,8 @@
                 document.getElementById('main-nav').classList.remove('hidden');
                 document.getElementById('dashboard').classList.remove('hidden');
                 loadDashboard();
-                if (urlDocName && urlDocName !== '' && urlDocName !== 'index.html') loadDocByName(urlDocName);
-            } else if (urlDocName && urlDocName !== '' && urlDocName !== 'index.html') {
+                if (urlDocName && !['index.html', ''].includes(urlDocName)) loadDocByName(urlDocName);
+            } else if (urlDocName && !['index.html', ''].includes(urlDocName)) {
                 loadDocByName(urlDocName);
             } else {
                 if (user) signOut(auth);
@@ -219,7 +220,6 @@
         });
 
         function loadDocByName(docName) {
-            // find doc by title/name in database
             get(ref(db, 'docs')).then(s => {
                 const docs = s.val();
                 for (let id in docs) {
@@ -229,8 +229,7 @@
                         return;
                     }
                 }
-                // Doc not found or not accessible
-                showToast('Document not found');
+                showToast('Document not found or private');
             });
         }
 
@@ -239,6 +238,7 @@
                 const grid = document.getElementById('docs-grid');
                 grid.innerHTML = '';
                 const data = s.val();
+                if (!data) return;
                 for (let id in data) {
                     if (data[id].owner === ADMIN_EMAIL) {
                         const card = document.createElement('div');
@@ -254,43 +254,47 @@
         function openEditor(id, data) {
             currentDocId = id;
             currentDocTitle = data.title;
+            const editContent = document.getElementById('edit-content');
+            
             document.getElementById('edit-title').value = data.title;
-            document.getElementById('edit-content').innerHTML = data.content || '';
+            editContent.innerHTML = data.content || '';
             
             const isOwner = auth.currentUser && auth.currentUser.email === ADMIN_EMAIL;
-            document.getElementById('edit-content').contentEditable = isOwner;
+            editContent.contentEditable = isOwner;
+            
             document.getElementById('admin-toolbar').classList.toggle('hidden', !isOwner);
             document.getElementById('admin-actions').classList.toggle('hidden', !isOwner);
             document.getElementById('close-editor').classList.toggle('hidden', !isOwner);
+            document.getElementById('top-share-btn').classList.toggle('hidden', !isOwner);
             
-            document.getElementById('status-bar').innerText = isOwner ? "Editing: OWNER" : "Viewing: GUEST";
-            document.getElementById('status-bar').className = isOwner ? "bg-blue-600 text-white px-6 py-1.5 text-[9px] font-black uppercase tracking-widest text-center" : "bg-slate-800 text-white px-6 py-1.5 text-[9px] font-black uppercase tracking-widest text-center";
+            const statusBar = document.getElementById('status-bar');
+            statusBar.innerText = isOwner ? "Editing: OWNER" : "Viewing: GUEST";
+            statusBar.className = isOwner ? "bg-blue-600 text-white px-6 py-1.5 text-[9px] font-black uppercase tracking-widest text-center" : "bg-slate-800 text-white px-6 py-1.5 text-[9px] font-black uppercase tracking-widest text-center";
 
             document.getElementById('public-toggle').checked = !!data.publicView;
             document.getElementById('copy-link-btn').classList.toggle('hidden', !data.publicView);
             
-            document.getElementById('edit-content').className = `max-w-4xl mx-auto p-12 md:p-24 outline-none ${data.fontClass || 'font-sans'}`;
+            editContent.className = `max-w-4xl mx-auto p-12 md:p-24 outline-none ${data.fontClass || 'font-sans'}`;
             document.getElementById('font-select').value = data.fontClass || 'font-sans';
             
             document.getElementById('editor-modal').classList.remove('hidden');
             window.history.pushState({}, '', `/${encodeURIComponent(data.title)}`);
+            
             attachImageListeners();
-            // detach previous listener
+            updateCount();
+
             if (currentUnsub) currentUnsub();
-            // subscribe to realtime updates for this document
             currentUnsub = onValue(ref(db, `docs/${id}`), (snap) => {
                 const d = snap.val();
-                if (!d) return;
-                // update UI fields
+                if (!d || isTyping) return;
+                
                 document.getElementById('edit-title').value = d.title || '';
                 currentDocTitle = d.title;
                 document.getElementById('font-select').value = d.fontClass || 'font-sans';
-                document.getElementById('edit-content').className = `max-w-4xl mx-auto p-12 md:p-24 outline-none ${d.fontClass || 'font-sans'}`;
-                document.getElementById('public-toggle').checked = !!d.publicView;
-                document.getElementById('copy-link-btn').classList.toggle('hidden', !d.publicView);
-                // if remote change and user not actively typing, apply it
-                if (!isTyping && d.content != document.getElementById('edit-content').innerHTML) {
-                    document.getElementById('edit-content').innerHTML = d.content || '';
+                editContent.className = `max-w-4xl mx-auto p-12 md:p-24 outline-none ${d.fontClass || 'font-sans'}`;
+                
+                if (d.content !== editContent.innerHTML) {
+                    editContent.innerHTML = d.content || '';
                     updateCount();
                     attachImageListeners();
                 }
@@ -305,7 +309,7 @@
                 content: document.getElementById('edit-content').innerHTML,
                 fontClass: document.getElementById('font-select').value,
                 lastUpdatedAt: Date.now(),
-                lastUpdatedBy: auth.currentUser ? auth.currentUser.uid : null
+                publicView: document.getElementById('public-toggle').checked
             };
             update(ref(db, `docs/${currentDocId}`), payload).then(() => {
                 document.getElementById('save-indicator').innerText = "SAVED";
@@ -313,7 +317,7 @@
             });
         };
 
-        // --- Multimedia Features ---
+        // --- Multimedia & Images ---
         document.getElementById('btn-image').onclick = () => document.getElementById('image-input').click();
         document.getElementById('image-input').onchange = (e) => {
             const file = e.target.files[0];
@@ -335,12 +339,21 @@
                 wrap.onmousedown = (e) => {
                     document.querySelectorAll('.resizable-img').forEach(el => el.classList.remove('selected'));
                     wrap.classList.add('selected');
+                    
                     if (e.target.classList.contains('resize-handle')) {
                         e.preventDefault();
                         const startX = e.clientX;
                         const startW = wrap.offsetWidth;
-                        const onMove = (mv) => { wrap.style.width = (startW + (mv.clientX - startX)) + 'px'; };
-                        const onUp = () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); save(); };
+                        
+                        const onMove = (mv) => { 
+                            const newWidth = startW + (mv.clientX - startX);
+                            wrap.style.width = newWidth + 'px'; 
+                        };
+                        const onUp = () => { 
+                            document.removeEventListener('mousemove', onMove); 
+                            document.removeEventListener('mouseup', onUp); 
+                            save(); 
+                        };
                         document.addEventListener('mousemove', onMove);
                         document.addEventListener('mouseup', onUp);
                     }
@@ -360,136 +373,131 @@
             document.getElementById('word-count').innerText = `${words} Words`;
         }
 
-        // --- AI Enhancement helpers ---
-        function detectContentType(text) {
-            const lowerText = text.toLowerCase();
-            if (/(dear|hi|hello|greetings).{0,20}(sincerely|regards|best|thanks|cheers)|to:|subject:|cc:|bcc:|from:/i.test(text)) return 'email';
-            if (/(introduction|conclusion|thesis|however|furthermore|in conclusion|therefore).{0,20}|in this essay|\bparagraph\b/i.test(text)) return 'essay';
-            if (/hey |you know|totally|awesome|check this out|here's the thing/i.test(text)) return 'blog';
-            if (/\bfunction\b|\bmethod\b|\bimplementation\b|\bhereby\b|\bwhereupon\b|\bpursuant\b/i.test(text)) return 'formal';
-            if (/^[-•*]\s|^\d+\.\s/m.test(text)) return 'notes';
-            return 'general';
-        }
+        // --- AI Enhancement ---
         function getEnhancementPrompt(text, contentType) {
             const prompts = {
-                email: `Enhance this email to be professional, clear, and courteous. Improve tone, fix grammar, and make it more persuasive if needed. Keep it concise. Return ONLY the enhanced email, nothing else:\n\n${text}`,
-                essay: `Enhance this essay to be more articulate, well-structured, and academically sound. Improve flow, vocabulary, and argument clarity. Return ONLY the enhanced essay:\n\n${text}`,
-                blog: `Enhance this blog post to be more engaging and conversational. Return ONLY the enhanced text:\n\n${text}`,
-                formal: `Enhance this formal document to be professional and precise. Return ONLY the enhanced text:\n\n${text}`,
-                notes: `Enhance these notes to be clearer and organized. Return ONLY the enhanced notes:\n\n${text}`,
-                general: `Enhance and improve this text to be clearer and better written. Return ONLY the enhanced text:\n\n${text}`
+                email: `Enhance this email to be professional and clear. Return ONLY the enhanced text:\n\n${text}`,
+                essay: `Enhance this essay to be more articulate and academic. Return ONLY the enhanced text:\n\n${text}`,
+                blog: `Enhance this blog post to be more engaging. Return ONLY the enhanced text:\n\n${text}`,
+                formal: `Enhance this formal document to be precise. Return ONLY the enhanced text:\n\n${text}`,
+                notes: `Organize these notes clearly. Return ONLY the enhanced text:\n\n${text}`
             };
-            return prompts[contentType] || prompts.general;
+            return prompts[contentType] || `Improve this text for clarity. Return ONLY enhanced text:\n\n${text}`;
         }
+
         async function enhanceTextWithAI() {
             if (aiProcessing) return;
             const sel = window.getSelection();
-            if (!sel.toString().trim()) { showToast('Select text first'); return; }
+            const text = sel.toString().trim();
+            if (!text) { showToast('Select text first'); return; }
+
             document.getElementById('enhance-modal').classList.remove('hidden');
             const selectedType = await new Promise(resolve => {
                 const buttons = document.querySelectorAll('.enhance-type-btn');
-                const handle = e => { buttons.forEach(b=>b.removeEventListener('click',handle));
-                    document.getElementById('enhance-cancel').removeEventListener('click',cancel);
+                const cleanUp = () => {
+                    buttons.forEach(b => b.onclick = null);
+                    document.getElementById('enhance-cancel').onclick = null;
                     document.getElementById('enhance-modal').classList.add('hidden');
-                    resolve(e.target.closest('button').dataset.type);
                 };
-                const cancel = () => { buttons.forEach(b=>b.removeEventListener('click',handle));
-                    document.getElementById('enhance-cancel').removeEventListener('click',cancel);
-                    document.getElementById('enhance-modal').classList.add('hidden');
-                    resolve(null); };
-                buttons.forEach(b=>b.addEventListener('click',handle));
-                document.getElementById('enhance-cancel').addEventListener('click',cancel);
+                buttons.forEach(b => b.onclick = (e) => { cleanUp(); resolve(e.target.dataset.type); });
+                document.getElementById('enhance-cancel').onclick = () => { cleanUp(); resolve(null); };
             });
+
             if (!selectedType) return;
+
             aiProcessing = true;
             const btn = document.getElementById('btn-ai-enhance');
             const orig = btn.innerHTML;
-            btn.innerHTML = '<div class="spinner"></div>Enhancing...'; btn.disabled=true;
+            btn.innerHTML = '<div class="spinner"></div>Enhancing...'; btn.disabled = true;
+
             try {
-                const text = sel.toString();
-                const prompt = getEnhancementPrompt(text, selectedType);
-                const resp = await fetch(GROQ_API_URL, { method:'POST', headers:{'Authorization':`Bearer ${GROQ_API_KEY}`,'Content-Type':'application/json'},
-                    body: JSON.stringify({ model:'llama-3.3-70b-versatile', messages:[{role:'user',content:prompt}], max_tokens:500, temperature:0.5 })
+                const resp = await fetch(GROQ_API_URL, { 
+                    method:'POST', 
+                    headers:{'Authorization':`Bearer ${GROQ_API_KEY}`,'Content-Type':'application/json'},
+                    body: JSON.stringify({ 
+                        model:'llama-3.3-70b-versatile', 
+                        messages:[{role:'user',content:getEnhancementPrompt(text, selectedType)}], 
+                        max_tokens:800, 
+                        temperature:0.6 
+                    })
                 });
-                if(!resp.ok){ const err=await resp.json(); showToast(`Error: ${err.error?.message||'failed'}`); return; }
-                const data=await resp.json();
-                document.execCommand('insertText',false,data.choices[0].message.content.trim());
-                save(); showToast(`Enhanced (${selectedType})`);
-            } catch(e){ showToast('Enhance failed'); }
-            finally{ aiProcessing=false; btn.innerHTML=orig; btn.disabled=false; }
+                const data = await resp.json();
+                if(data.choices) {
+                    document.execCommand('insertText', false, data.choices[0].message.content.trim());
+                    save();
+                    showToast(`Enhanced as ${selectedType}`);
+                }
+            } catch(e) { showToast('Enhance failed'); }
+            finally { aiProcessing = false; btn.innerHTML = orig; btn.disabled = false; }
         }
 
-        // --- Controls ---
+        // --- Event Listeners ---
         document.getElementById('edit-content').addEventListener('input', () => {
             isTyping = true;
             updateCount();
             if (saveTimer) clearTimeout(saveTimer);
-            saveTimer = setTimeout(() => { save(); isTyping = false; }, 1200);
+            saveTimer = setTimeout(() => { isTyping = false; save(); }, 1200);
         });
+
         document.getElementById('edit-title').addEventListener('input', () => {
             if (saveTimer) clearTimeout(saveTimer);
             saveTimer = setTimeout(save, 800);
         });
+
         document.getElementById('font-select').onchange = (e) => {
             document.getElementById('edit-content').className = `max-w-4xl mx-auto p-12 md:p-24 outline-none ${e.target.value}`;
-            if (saveTimer) clearTimeout(saveTimer);
-            saveTimer = setTimeout(save, 400);
+            save();
         };
 
         document.getElementById('btn-ai-enhance').onclick = enhanceTextWithAI;
-
         document.getElementById('login-btn').onclick = () => signInWithPopup(auth, provider);
         document.getElementById('logout-btn').onclick = () => signOut(auth).then(() => window.location.reload());
         document.getElementById('close-editor').onclick = () => { document.getElementById('editor-modal').classList.add('hidden'); window.history.pushState({}, '', '/'); };
+        
         document.getElementById('create-btn').onclick = () => {
             const n = push(ref(db, 'docs'));
-            const d = { title: "Doc", content: "", owner: ADMIN_EMAIL, fontClass: 'font-sans', publicView: false };
+            const d = { title: "Untitled Doc", content: "", owner: ADMIN_EMAIL, fontClass: 'font-sans', publicView: false };
             set(n, d).then(() => openEditor(n.key, d));
         };
+
         document.getElementById('export-pdf-btn').onclick = () => {
             showToast("Generating PDF...");
-            html2pdf().from(document.getElementById('edit-content')).save(`${document.getElementById('edit-title').value}.pdf`);
+            const opt = { margin: 1, filename: `${document.getElementById('edit-title').value}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' } };
+            html2pdf().set(opt).from(document.getElementById('edit-content')).save();
         };
-        document.getElementById('share-menu-btn').onclick = (e) => { e.stopPropagation(); document.getElementById('share-dropdown').classList.toggle('hidden'); };
-        // top share button (prominent)
-        const topShareBtn = document.createElement('button');
-        topShareBtn.id = 'top-share-btn';
-        topShareBtn.className = 'bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-bold';
-        topShareBtn.innerText = 'Share';
-        // insert into header area next to PDF export
-        document.getElementById('export-pdf-btn').parentNode.insertBefore(topShareBtn, document.getElementById('export-pdf-btn'));
-        topShareBtn.onclick = (e) => { e.stopPropagation(); document.getElementById('share-dropdown').classList.toggle('hidden'); };
+
+        const toggleShare = (e) => { e.stopPropagation(); document.getElementById('share-dropdown').classList.toggle('hidden'); };
+        document.getElementById('share-menu-btn').onclick = toggleShare;
+        document.getElementById('top-share-btn').onclick = toggleShare;
+
         document.getElementById('public-toggle').onchange = (e) => {
             update(ref(db, `docs/${currentDocId}`), { publicView: e.target.checked });
             document.getElementById('copy-link-btn').classList.toggle('hidden', !e.target.checked);
-            showToast("Permissions updated");
+            showToast(e.target.checked ? "Document is now Public" : "Document is now Private");
         };
+
         document.getElementById('copy-link-btn').onclick = () => {
             const link = `${window.location.origin}/${encodeURIComponent(currentDocTitle)}`;
             navigator.clipboard.writeText(link);
-            if (!document.getElementById('public-toggle').checked) {
-                showToast("Link copied. Toggle Public to allow viewing.");
-            } else {
-                showToast("Link copied!");
-            }
+            showToast("Link copied to clipboard!");
         };
-        document.getElementById('edit-title').addEventListener('change', () => {
-            currentDocTitle = document.getElementById('edit-title').value;
-            window.history.replaceState({}, '', `/${encodeURIComponent(currentDocTitle)}`);
-        });
+
         document.getElementById('delete-btn-trigger').onclick = () => {
-            openModal("Delete Document?", "This cannot be undone.", false, () => {
+            openModal("Delete Document?", "This action is permanent.", false, () => {
                 remove(ref(db, `docs/${currentDocId}`));
                 document.getElementById('editor-modal').classList.add('hidden');
                 showToast("Deleted");
             });
         };
 
-        window.addEventListener('click', (e) => {
-            document.getElementById('share-dropdown').classList.add('hidden');
-            if (!e.target.closest('.resizable-img')) document.querySelectorAll('.resizable-img').forEach(el => el.classList.remove('selected'));
-        });
-        document.getElementById('share-dropdown').onclick = (e) => e.stopPropagation();
+        window.onclick = (e) => {
+            if (!e.target.closest('#share-menu-btn') && !e.target.closest('#top-share-btn') && !e.target.closest('#share-dropdown')) {
+                document.getElementById('share-dropdown').classList.add('hidden');
+            }
+            if (!e.target.closest('.resizable-img')) {
+                document.querySelectorAll('.resizable-img').forEach(el => el.classList.remove('selected'));
+            }
+        };
     </script>
 </body>
 </html>
