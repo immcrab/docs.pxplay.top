@@ -32,6 +32,10 @@
         .font-mono { font-family: 'JetBrains Mono', monospace; }
         .font-slab { font-family: 'Roboto Slab', serif; }
         .font-hand { font-family: 'Caveat', cursive; font-size: 1.4rem; }
+
+        /* Spinner */
+        .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(0,0,0,.15); border-radius: 50%; border-top-color: #000; animation: spin 0.8s linear infinite; margin-right: 6px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen font-sans overflow-x-hidden">
@@ -47,7 +51,7 @@
     </div>
 
     <div id="custom-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden z-[80] flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl">
+        <div class="bg-white rounded-3xl p-8 max-w-sm w/full shadow-2xl">
             <h3 id="modal-title" class="text-xl font-bold text-slate-800 mb-2"></h3>
             <p id="modal-desc" class="text-slate-500 text-sm mb-6"></p>
             <input id="modal-input" type="text" class="hidden w-full p-4 border rounded-xl mb-6 outline-none focus:ring-2 ring-blue-500" placeholder="Paste link here...">
@@ -58,16 +62,31 @@
         </div>
     </div>
 
+    <div id="enhance-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden z-[80] flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl">
+            <h3 class="text-xl font-bold text-slate-800 mb-6">Enhance as:</h3>
+            <div class="space-y-3">
+                <button class="enhance-type-btn w-full bg-slate-100 hover:bg-blue-100 text-slate-800 px-4 py-3 rounded-xl text-left font-semibold transition" data-type="email">Email</button>
+                <button class="enhance-type-btn w-full bg-slate-100 hover:bg-blue-100 text-slate-800 px-4 py-3 rounded-xl text-left font-semibold transition" data-type="essay">Essay</button>
+                <button class="enhance-type-btn w/full bg-slate-100 hover:bg-blue-100 text-slate-800 px-4 py-3 rounded-xl text-left font-semibold transition" data-type="blog">Blog Post</button>
+                <button class="enhance-type-btn w/full bg-slate-100 hover:bg-blue-100 text-slate-800 px-4 py-3 rounded-xl text-left font-semibold transition" data-type="formal">Formal Document</button>
+                <button class="enhance-type-btn w/full bg-slate-100 hover:bg-blue-100 text-slate-800 px-4 py-3 rounded-xl text-left font-semibold transition" data-type="notes">Notes</button>
+            </div>
+            <button id="enhance-cancel" class="w/full mt-4 text-slate-400 font-bold text-sm hover:text-slate-600">Cancel</button>
+        </div>
+    </div>
+
+
     <nav id="main-nav" class="hidden bg-white border-b px-8 py-4 flex justify-between items-center sticky top-0 z-10">
-        <h2 class="text-xl font-black text-slate-800 uppercase tracking-tighter">Owen's Library</h2>
+        <h2 class="text-xl font-black text-slate-800 uppercase tracking-tighter">Owen's docs</h2>
         <button id="logout-btn" class="text-red-500 font-black text-[10px] tracking-widest uppercase">Logout</button>
     </nav>
 
     <main id="dashboard" class="hidden max-w-6xl mx-auto p-8">
         <div class="flex justify-between items-center mb-12">
-            <h3 class="text-3xl font-bold text-slate-900">Documents</h3>
+            <h3 class="text-3xl font-bold text-slate-900">Docs</h3>
             <button id="create-btn" class="bg-blue-600 text-white px-8 py-3 rounded-full font-bold shadow-lg hover:shadow-blue-200 transition-all">
-                <i class="fas fa-plus mr-2"></i> New
+                <i class="fas fa-plus mr-2"></i> Newer Docs
             </button>
         </div>
         <div id="docs-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
@@ -100,6 +119,8 @@
             <button onclick="document.execCommand('italic')" class="p-2 hover:bg-slate-200 rounded-lg"><i class="fas fa-italic"></i></button>
             <button id="btn-link" class="p-2 hover:bg-blue-50 text-blue-600 rounded-lg"><i class="fas fa-link"></i></button>
             <button id="btn-image" class="p-2 hover:bg-emerald-50 text-emerald-600 rounded-lg"><i class="fas fa-image"></i> Image</button>
+            <div class="w-px h-6 bg-slate-200 mx-2"></div>
+            <button id="btn-ai-enhance" class="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-1 rounded-lg text-xs font-bold transition">Enhance</button>
         </div>
 
         <div class="flex-1 overflow-y-auto bg-white" id="editor-container">
@@ -144,10 +165,14 @@
         const db = getDatabase(app);
         const provider = new GoogleAuthProvider();
         const ADMIN_EMAIL = 'imcrabfr@gmail.com';
+        const GROQ_API_KEY = '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';
+        const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
         let currentDocId = null;
+        let currentDocTitle = null;
         let currentUnsub = null;
         let isTyping = false;
         let saveTimer = null;
+        let aiProcessing = false;
 
         // --- Custom Logic ---
         function showToast(m) {
@@ -171,30 +196,41 @@
         }
 
         // --- Auth ---
+        function getDocNameFromUrl() {
+            const path = window.location.pathname;
+            const match = path.match(/\/([^/]+)\/?$/);
+            return match ? decodeURIComponent(match[1]) : null;
+        }
+
         onAuthStateChanged(auth, (user) => {
-            const urlDocId = new URLSearchParams(window.location.search).get('doc');
+            const urlDocName = getDocNameFromUrl();
             if (user && user.email === ADMIN_EMAIL) {
                 document.getElementById('login-screen').classList.add('hidden-fade');
                 document.getElementById('main-nav').classList.remove('hidden');
                 document.getElementById('dashboard').classList.remove('hidden');
                 loadDashboard();
-                if (urlDocId) loadDoc(urlDocId);
-            } else if (urlDocId) {
-                loadDoc(urlDocId);
+                if (urlDocName && urlDocName !== '' && urlDocName !== 'index.html') loadDocByName(urlDocName);
+            } else if (urlDocName && urlDocName !== '' && urlDocName !== 'index.html') {
+                loadDocByName(urlDocName);
             } else {
                 if (user) signOut(auth);
                 document.getElementById('login-screen').classList.remove('hidden-fade');
             }
         });
 
-        function loadDoc(id) {
-            // open editor and let the realtime listener populate content
-            get(ref(db, `docs/${id}`)).then(s => {
-                const d = s.val();
-                if (d && (d.publicView || (auth.currentUser && d.owner === ADMIN_EMAIL))) {
-                    openEditor(id, d);
-                    document.getElementById('login-screen').classList.add('hidden-fade');
+        function loadDocByName(docName) {
+            // find doc by title/name in database
+            get(ref(db, 'docs')).then(s => {
+                const docs = s.val();
+                for (let id in docs) {
+                    if (docs[id].title === docName && (docs[id].publicView || (auth.currentUser && docs[id].owner === ADMIN_EMAIL))) {
+                        openEditor(id, docs[id]);
+                        document.getElementById('login-screen').classList.add('hidden-fade');
+                        return;
+                    }
                 }
+                // Doc not found or not accessible
+                showToast('Document not found');
             });
         }
 
@@ -217,6 +253,7 @@
 
         function openEditor(id, data) {
             currentDocId = id;
+            currentDocTitle = data.title;
             document.getElementById('edit-title').value = data.title;
             document.getElementById('edit-content').innerHTML = data.content || '';
             
@@ -236,6 +273,7 @@
             document.getElementById('font-select').value = data.fontClass || 'font-sans';
             
             document.getElementById('editor-modal').classList.remove('hidden');
+            window.history.pushState({}, '', `/${encodeURIComponent(data.title)}`);
             attachImageListeners();
             // detach previous listener
             if (currentUnsub) currentUnsub();
@@ -245,6 +283,7 @@
                 if (!d) return;
                 // update UI fields
                 document.getElementById('edit-title').value = d.title || '';
+                currentDocTitle = d.title;
                 document.getElementById('font-select').value = d.fontClass || 'font-sans';
                 document.getElementById('edit-content').className = `max-w-4xl mx-auto p-12 md:p-24 outline-none ${d.fontClass || 'font-sans'}`;
                 document.getElementById('public-toggle').checked = !!d.publicView;
@@ -321,6 +360,65 @@
             document.getElementById('word-count').innerText = `${words} Words`;
         }
 
+        // --- AI Enhancement helpers ---
+        function detectContentType(text) {
+            const lowerText = text.toLowerCase();
+            if (/(dear|hi|hello|greetings).{0,20}(sincerely|regards|best|thanks|cheers)|to:|subject:|cc:|bcc:|from:/i.test(text)) return 'email';
+            if (/(introduction|conclusion|thesis|however|furthermore|in conclusion|therefore).{0,20}|in this essay|\bparagraph\b/i.test(text)) return 'essay';
+            if (/hey |you know|totally|awesome|check this out|here's the thing/i.test(text)) return 'blog';
+            if (/\bfunction\b|\bmethod\b|\bimplementation\b|\bhereby\b|\bwhereupon\b|\bpursuant\b/i.test(text)) return 'formal';
+            if (/^[-•*]\s|^\d+\.\s/m.test(text)) return 'notes';
+            return 'general';
+        }
+        function getEnhancementPrompt(text, contentType) {
+            const prompts = {
+                email: `Enhance this email to be professional, clear, and courteous. Improve tone, fix grammar, and make it more persuasive if needed. Keep it concise. Return ONLY the enhanced email, nothing else:\n\n${text}`,
+                essay: `Enhance this essay to be more articulate, well-structured, and academically sound. Improve flow, vocabulary, and argument clarity. Return ONLY the enhanced essay:\n\n${text}`,
+                blog: `Enhance this blog post to be more engaging and conversational. Return ONLY the enhanced text:\n\n${text}`,
+                formal: `Enhance this formal document to be professional and precise. Return ONLY the enhanced text:\n\n${text}`,
+                notes: `Enhance these notes to be clearer and organized. Return ONLY the enhanced notes:\n\n${text}`,
+                general: `Enhance and improve this text to be clearer and better written. Return ONLY the enhanced text:\n\n${text}`
+            };
+            return prompts[contentType] || prompts.general;
+        }
+        async function enhanceTextWithAI() {
+            if (aiProcessing) return;
+            const sel = window.getSelection();
+            if (!sel.toString().trim()) { showToast('Select text first'); return; }
+            document.getElementById('enhance-modal').classList.remove('hidden');
+            const selectedType = await new Promise(resolve => {
+                const buttons = document.querySelectorAll('.enhance-type-btn');
+                const handle = e => { buttons.forEach(b=>b.removeEventListener('click',handle));
+                    document.getElementById('enhance-cancel').removeEventListener('click',cancel);
+                    document.getElementById('enhance-modal').classList.add('hidden');
+                    resolve(e.target.closest('button').dataset.type);
+                };
+                const cancel = () => { buttons.forEach(b=>b.removeEventListener('click',handle));
+                    document.getElementById('enhance-cancel').removeEventListener('click',cancel);
+                    document.getElementById('enhance-modal').classList.add('hidden');
+                    resolve(null); };
+                buttons.forEach(b=>b.addEventListener('click',handle));
+                document.getElementById('enhance-cancel').addEventListener('click',cancel);
+            });
+            if (!selectedType) return;
+            aiProcessing = true;
+            const btn = document.getElementById('btn-ai-enhance');
+            const orig = btn.innerHTML;
+            btn.innerHTML = '<div class="spinner"></div>Enhancing...'; btn.disabled=true;
+            try {
+                const text = sel.toString();
+                const prompt = getEnhancementPrompt(text, selectedType);
+                const resp = await fetch(GROQ_API_URL, { method:'POST', headers:{'Authorization':`Bearer ${GROQ_API_KEY}`,'Content-Type':'application/json'},
+                    body: JSON.stringify({ model:'llama-3.3-70b-versatile', messages:[{role:'user',content:prompt}], max_tokens:500, temperature:0.5 })
+                });
+                if(!resp.ok){ const err=await resp.json(); showToast(`Error: ${err.error?.message||'failed'}`); return; }
+                const data=await resp.json();
+                document.execCommand('insertText',false,data.choices[0].message.content.trim());
+                save(); showToast(`Enhanced (${selectedType})`);
+            } catch(e){ showToast('Enhance failed'); }
+            finally{ aiProcessing=false; btn.innerHTML=orig; btn.disabled=false; }
+        }
+
         // --- Controls ---
         document.getElementById('edit-content').addEventListener('input', () => {
             isTyping = true;
@@ -338,12 +436,14 @@
             saveTimer = setTimeout(save, 400);
         };
 
+        document.getElementById('btn-ai-enhance').onclick = enhanceTextWithAI;
+
         document.getElementById('login-btn').onclick = () => signInWithPopup(auth, provider);
         document.getElementById('logout-btn').onclick = () => signOut(auth).then(() => window.location.reload());
-        document.getElementById('close-editor').onclick = () => { document.getElementById('editor-modal').classList.add('hidden'); window.history.replaceState({}, '', window.location.pathname); };
+        document.getElementById('close-editor').onclick = () => { document.getElementById('editor-modal').classList.add('hidden'); window.history.pushState({}, '', '/'); };
         document.getElementById('create-btn').onclick = () => {
             const n = push(ref(db, 'docs'));
-            const d = { title: "New Doc", content: "", owner: ADMIN_EMAIL, fontClass: 'font-sans', publicView: false };
+            const d = { title: "Doc", content: "", owner: ADMIN_EMAIL, fontClass: 'font-sans', publicView: false };
             set(n, d).then(() => openEditor(n.key, d));
         };
         document.getElementById('export-pdf-btn').onclick = () => {
@@ -365,7 +465,7 @@
             showToast("Permissions updated");
         };
         document.getElementById('copy-link-btn').onclick = () => {
-            const link = `${window.location.origin}${window.location.pathname}?doc=${currentDocId}`;
+            const link = `${window.location.origin}/${encodeURIComponent(currentDocTitle)}`;
             navigator.clipboard.writeText(link);
             if (!document.getElementById('public-toggle').checked) {
                 showToast("Link copied. Toggle Public to allow viewing.");
@@ -373,6 +473,10 @@
                 showToast("Link copied!");
             }
         };
+        document.getElementById('edit-title').addEventListener('change', () => {
+            currentDocTitle = document.getElementById('edit-title').value;
+            window.history.replaceState({}, '', `/${encodeURIComponent(currentDocTitle)}`);
+        });
         document.getElementById('delete-btn-trigger').onclick = () => {
             openModal("Delete Document?", "This cannot be undone.", false, () => {
                 remove(ref(db, `docs/${currentDocId}`));
