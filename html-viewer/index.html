@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Source Viewer | pxplay</title>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --bg: #0b0e14;
+            --card: #151921;
+            --text: #f3f4f6;
+            --border: #374151;
+            --input: #1f2937;
+            --code-green: #10b981;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg);
+            font-family: 'Inter', -apple-system, sans-serif;
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        header {
+            width: 100%;
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-sizing: border-box;
+            background: var(--card);
+        }
+
+        .logo {
+            font-weight: 800;
+            font-size: 1.2rem;
+            color: #fff;
+            text-decoration: none;
+        }
+
+        .status-badge {
+            background: var(--input);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            border: 1px solid var(--border);
+            transition: all 0.3s ease;
+        }
+
+        .main-content {
+            width: 100%;
+            max-width: 900px;
+            padding: 40px 20px;
+            box-sizing: border-box;
+        }
+
+        .input-section {
+            background: var(--card);
+            padding: 25px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            margin-bottom: 30px;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        input[type="text"] {
+            flex-grow: 1;
+            background: var(--input);
+            border: 1px solid var(--border);
+            color: white;
+            padding: 14px;
+            border-radius: 8px;
+            outline: none;
+            font-size: 1rem;
+        }
+
+        input:focus { border-color: var(--primary); }
+
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: opacity 0.2s;
+        }
+
+        button:hover { opacity: 0.9; }
+
+        .code-window {
+            background: #000;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .code-toolbar {
+            background: var(--card);
+            padding: 10px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.8rem;
+            color: #9ca3af;
+        }
+
+        .copy-btn {
+            background: var(--input);
+            padding: 5px 10px;
+            font-size: 0.7rem;
+            border: 1px solid var(--border);
+        }
+
+        pre {
+            margin: 0;
+            padding: 20px;
+            color: var(--code-green);
+            font-family: 'Fira Code', 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            overflow: auto;
+            max-height: 500px;
+            white-space: pre-wrap;
+        }
+
+        h1 { font-size: 1.8rem; margin: 0; }
+        p { color: #9ca3af; margin: 5px 0 0 0; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <a href="#" class="logo">pxplay</a>
+        <div class="status-badge" id="status">Ready</div>
+    </header>
+
+    <div class="main-content">
+        <div class="input-section">
+            <h1>Source Viewer</h1>
+            <p>Fetch the raw HTML of any website using your Cloudflare backend.</p>
+            <div class="input-group">
+                <input type="text" id="urlInput" placeholder="https://example.com" value="https://google.com">
+                <button onclick="fetchSource()">Fetch Code</button>
+            </div>
+        </div>
+
+        <div class="code-window">
+            <div class="code-toolbar">
+                <span id="currentUrl">Viewing: None</span>
+                <button class="copy-btn" onclick="copyCode()">Copy Code</button>
+            </div>
+            <pre id="output"><code>// Source code will appear here...</code></pre>
+        </div>
+    </div>
+
+    <script>
+        async function fetchSource() {
+            const input = document.getElementById('urlInput').value;
+            const output = document.getElementById('output');
+            const status = document.getElementById('status');
+            const urlLabel = document.getElementById('currentUrl');
+
+            // Using your specific worker URL
+            const WORKER_URL = "https://great.olee018.workers.dev";
+
+            if (!input) return alert("Please enter a URL.");
+
+            let targetUrl = input.trim();
+            if (!targetUrl.startsWith('http')) targetUrl = 'https://' + targetUrl;
+
+            status.innerText = "FETCHING";
+            status.style.color = "var(--primary)";
+            output.innerText = "Requesting source from Cloudflare...";
+
+            try {
+                const response = await fetch(`${WORKER_URL}?url=${encodeURIComponent(targetUrl)}`);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                
+                const data = await response.text();
+                output.innerText = data;
+                
+                status.innerText = "SUCCESS";
+                status.style.color = "var(--code-green)";
+                urlLabel.innerText = "Viewing: " + targetUrl;
+            } catch (err) {
+                output.innerText = "Error: " + err.message;
+                status.innerText = "FAILED";
+                status.style.color = "#ef4444";
+            }
+        }
+
+        function copyCode() {
+            const code = document.getElementById('output').innerText;
+            navigator.clipboard.writeText(code);
+            alert("Code copied to clipboard!");
+        }
+    </script>
+
+</body>
+</html>
