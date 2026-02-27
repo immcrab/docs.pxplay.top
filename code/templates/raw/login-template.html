@@ -1,58 +1,104 @@
----
-layout: none
----
-<script>
-  // This tiny script stops the browser from rendering the HTML 
-  // and forces it to show the code as plain text.
-  window.onload = function() {
-    document.body.style.whiteSpace = "pre";
-    document.body.style.fontFamily = "monospace";
-    document.body.style.backgroundColor = "#0b0e14";
-    document.body.style.color = "#f3f4f6";
-    document.body.style.padding = "20px";
-    document.body.textContent = document.documentElement.outerHTML;
-  };
-</script>
 
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>pxplay | Login Template</title>
+    <title>Raw Code | Login Template</title>
     <style>
+        body {
+            background-color: #0b0e14;
+            color: #f3f4f6;
+            font-family: 'Courier New', monospace;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #151921;
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: 1px solid #374151;
+            margin-bottom: 20px;
+        }
+
+        .file-name {
+            font-size: 0.9rem;
+            color: #9ca3af;
+        }
+
+        #copy-btn {
+            background: #6366f1;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.8rem;
+            transition: background 0.2s;
+        }
+
+        #copy-btn:hover {
+            background: #4f46e5;
+        }
+
+        pre {
+            background: #151921;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #374151;
+            overflow-x: auto;
+            line-height: 1.5;
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header-bar">
+        <div class="file-name">login-template.html</div>
+        <button id="copy-btn" onclick="copyToClipboard()">Copy Code</button>
+    </div>
+
+<pre id="code-content">
+&lt;!DOCTYPE html&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;
+    &lt;meta charset="UTF-8"&gt;
+    &lt;title&gt;pxplay | Login&lt;/title&gt;
+    &lt;style&gt;
         :root {
             --primary: #6366f1;
             --bg: #0b0e14;
             --card: #151921;
             --text: #f3f4f6;
-            --input: #1f2937;
-            --border: #374151;
         }
         body {
-            margin: 0;
+            background-color: var(--bg);
+            color: var(--text);
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
-            background-color: var(--bg);
+            height: 100vh;
+            margin: 0;
             font-family: sans-serif;
         }
-        .login-container {
+        .card {
             background: var(--card);
             padding: 2rem;
             border-radius: 1rem;
-            width: 100%;
-            max-width: 350px;
-            border: 1px solid var(--border);
+            border: 1px solid #374151;
             text-align: center;
         }
         input {
             width: 100%;
             padding: 10px;
             margin: 10px 0;
-            background: var(--input);
-            border: 1px solid var(--border);
+            background: #1f2937;
+            border: 1px solid #374151;
             color: white;
             border-radius: 5px;
         }
@@ -65,14 +111,30 @@ layout: none
             border-radius: 5px;
             cursor: pointer;
         }
-    </style>
-</head>
-<body>
-    <div class="login-container">
-        <h1>pxplay</h1>
-        <input type="email" placeholder="Email">
-        <input type="password" placeholder="Password">
-        <button>Sign In</button>
-    </div>
+    &lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;div class="card"&gt;
+        &lt;h1&gt;pxplay&lt;/h1&gt;
+        &lt;input type="email" placeholder="Email"&gt;
+        &lt;input type="password" placeholder="Password"&gt;
+        &lt;button&gt;Sign In&lt;/button&gt;
+    &lt;/div&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</pre>
+
+    <script>
+        function copyToClipboard() {
+            const code = document.getElementById('code-content').innerText;
+            navigator.clipboard.writeText(code).then(() => {
+                const btn = document.getElementById('copy-btn');
+                btn.innerText = "Copied!";
+                setTimeout(() => {
+                    btn.innerText = "Copy Code";
+                }, 2000);
+            });
+        }
+    </script>
 </body>
 </html>
