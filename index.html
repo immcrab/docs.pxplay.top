@@ -16,7 +16,6 @@
         #edit-content { min-height: 600px; outline: none; line-height: 1.6; position: relative; }
         #edit-content a { color: #2563eb; text-decoration: underline; }
 
-        /* Image Resizing */
         .resizable-img { position: relative; display: inline-block; margin: 15px 0; line-height: 0; cursor: default; max-width: 100%; }
         .resizable-img img { width: 100%; height: auto; border-radius: 8px; display: block; pointer-events: none; }
         .resizable-img.selected { outline: 3px solid #3b82f6; }
@@ -26,14 +25,12 @@
         }
         .selected .resize-handle { display: block; }
 
-        /* Font Styles */
         .font-sans { font-family: 'Inter', sans-serif; }
         .font-serif { font-family: 'EB Garamond', serif; }
         .font-mono { font-family: 'JetBrains Mono', monospace; }
         .font-slab { font-family: 'Roboto Slab', serif; }
         .font-hand { font-family: 'Caveat', cursive; font-size: 1.4rem; }
 
-        /* Spinner */
         .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(0,0,0,.15); border-radius: 50%; border-top-color: #000; animation: spin 0.8s linear infinite; margin-right: 6px; }
         @keyframes spin { to { transform: rotate(360deg); } }
     </style>
@@ -82,13 +79,24 @@
     </nav>
 
     <main id="dashboard" class="hidden max-w-6xl mx-auto p-8">
+        <div id="admin-management" class="hidden mb-12 bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+            <h4 class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4">Authorized Users</h4>
+            <div class="flex gap-2">
+                <input id="new-user-email" type="email" placeholder="friend@gmail.com" class="flex-1 p-3 border rounded-xl outline-none focus:ring-2 ring-blue-500 text-sm">
+                <button id="add-user-btn" class="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold text-sm hover:bg-blue-700 transition">Add User</button>
+            </div>
+            <div id="allowed-users-list" class="flex flex-wrap gap-2 mt-4"></div>
+        </div>
+
         <div class="flex justify-between items-center mb-12">
-            <h3 class="text-3xl font-bold text-slate-900">Docs</h3>
+            <h3 class="text-3xl font-bold text-slate-900">Workspace</h3>
             <button id="create-btn" class="bg-blue-600 text-white px-8 py-3 rounded-full font-bold shadow-lg hover:shadow-blue-200 transition-all">
                 <i class="fas fa-plus mr-2"></i> Newer Docs
             </button>
         </div>
-        <div id="docs-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
+        
+        <div id="docs-container" class="space-y-12">
+            </div>
     </main>
 
     <div id="editor-modal" class="fixed inset-0 bg-white hidden z-[60] flex flex-col">
@@ -101,12 +109,12 @@
             </div>
             <div class="flex items-center gap-4">
                 <div id="save-indicator" class="text-[9px] font-black text-slate-400">SAVED</div>
-                <button id="top-share-btn" class="hidden bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-bold transition hover:bg-blue-700">Share</button>
+                <button id="top-share-btn" class="bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-bold transition hover:bg-blue-700">Share</button>
                 <button id="export-pdf-btn" class="bg-slate-100 hover:bg-slate-200 px-5 py-2 rounded-xl text-xs font-bold text-slate-700 transition">PDF</button>
             </div>
         </div>
 
-        <div id="admin-toolbar" class="hidden bg-slate-50 border-b p-2 flex flex-wrap gap-2 justify-center sticky top-0 z-20">
+        <div id="admin-toolbar" class="bg-slate-50 border-b p-2 flex flex-wrap gap-2 justify-center sticky top-0 z-20">
             <select id="font-select" class="text-xs font-bold border rounded-lg px-3 bg-white outline-none">
                 <option value="font-sans">Modern Sans</option>
                 <option value="font-serif">Classic Serif</option>
@@ -128,7 +136,7 @@
         </div>
 
         <div id="editor-footer" class="p-4 border-t flex justify-between items-center bg-slate-50 px-8">
-            <div id="admin-actions" class="hidden flex gap-4">
+            <div id="admin-actions" class="flex gap-4">
                 <div class="relative group">
                     <button id="share-menu-btn" class="bg-blue-600 text-white px-6 py-2 rounded-xl text-xs font-bold uppercase tracking-widest shadow-md">Access</button>
                     <div id="share-dropdown" class="hidden absolute bottom-full mb-3 left-0 w-64 bg-white border border-slate-100 shadow-2xl rounded-2xl p-6">
@@ -175,7 +183,7 @@
         let saveTimer = null;
         let aiProcessing = false;
 
-        // --- Utility Functions ---
+        // --- Utils ---
         function showToast(m) {
             const c = document.getElementById('toast-container');
             const t = document.createElement('div');
@@ -202,55 +210,118 @@
             return match ? decodeURIComponent(match[1]) : null;
         }
 
-        // --- Auth & Navigation ---
-        onAuthStateChanged(auth, (user) => {
+        // --- Auth & Multi-User Management ---
+        onAuthStateChanged(auth, async (user) => {
             const urlDocName = getDocNameFromUrl();
-            if (user && user.email === ADMIN_EMAIL) {
-                document.getElementById('login-screen').classList.add('hidden-fade');
-                document.getElementById('main-nav').classList.remove('hidden');
-                document.getElementById('dashboard').classList.remove('hidden');
-                loadDashboard();
-                if (urlDocName && !['index.html', ''].includes(urlDocName)) loadDocByName(urlDocName);
+            if (user) {
+                const isAdmin = user.email === ADMIN_EMAIL;
+                const allowedSnap = await get(ref(db, 'allowedUsers'));
+                const allowedList = Object.values(allowedSnap.val() || {});
+                const isAllowed = isAdmin || allowedList.includes(user.email);
+
+                if (isAllowed) {
+                    document.getElementById('login-screen').classList.add('hidden-fade');
+                    document.getElementById('main-nav').classList.remove('hidden');
+                    document.getElementById('dashboard').classList.remove('hidden');
+                    if (isAdmin) {
+                        document.getElementById('admin-management').classList.remove('hidden');
+                        loadAllowedUsers();
+                    }
+                    loadDashboard(user.email, isAdmin);
+                    if (urlDocName && !['index.html', ''].includes(urlDocName)) loadDocByName(urlDocName);
+                } else {
+                    showToast("Access Denied: " + user.email);
+                    signOut(auth);
+                }
             } else if (urlDocName && !['index.html', ''].includes(urlDocName)) {
                 loadDocByName(urlDocName);
             } else {
-                if (user) signOut(auth);
                 document.getElementById('login-screen').classList.remove('hidden-fade');
             }
         });
+
+        function loadAllowedUsers() {
+            onValue(ref(db, 'allowedUsers'), (snap) => {
+                const list = document.getElementById('allowed-users-list');
+                list.innerHTML = '';
+                Object.entries(snap.val() || {}).forEach(([key, email]) => {
+                    const tag = document.createElement('div');
+                    tag.className = "bg-slate-100 text-slate-600 px-3 py-1 rounded-full text-[10px] font-bold flex items-center gap-2";
+                    tag.innerHTML = `${email} <i class="fas fa-times cursor-pointer hover:text-red-500" onclick="window.removeUser('${key}')"></i>`;
+                    list.appendChild(tag);
+                });
+            });
+        }
+        window.removeUser = (key) => remove(ref(db, `allowedUsers/${key}`));
+        document.getElementById('add-user-btn').onclick = () => {
+            const i = document.getElementById('new-user-email');
+            if (i.value.trim()) push(ref(db, 'allowedUsers'), i.value.trim());
+            i.value = '';
+        };
+
+        function loadDashboard(userEmail, isAdmin) {
+            onValue(ref(db, 'docs'), (s) => {
+                const container = document.getElementById('docs-container');
+                container.innerHTML = '';
+                const data = s.val() || {};
+                
+                // Grouping Logic
+                const groups = {};
+                for (let id in data) {
+                    const doc = data[id];
+                    if (isAdmin || doc.owner === userEmail) {
+                        const ownerKey = doc.owner || 'Legacy';
+                        if (!groups[ownerKey]) groups[ownerKey] = [];
+                        groups[ownerKey].push({ id, ...doc });
+                    }
+                }
+
+                // Render Categorized Sections
+                for (let owner in groups) {
+                    const section = document.createElement('div');
+                    const sectionTitle = owner === userEmail ? "My Projects" : `User: ${owner}`;
+                    const gridId = `grid-${owner.replace(/[@.]/g, '')}`;
+
+                    section.innerHTML = `
+                        <h4 class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-6 border-b pb-2">${sectionTitle}</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="${gridId}"></div>
+                    `;
+                    container.appendChild(section);
+
+                    const grid = section.querySelector(`#${gridId}`);
+                    groups[owner].forEach(doc => {
+                        const card = document.createElement('div');
+                        card.className = "group bg-white p-8 rounded-3xl border border-slate-100 hover:border-blue-500 cursor-pointer shadow-sm hover:shadow-xl transition-all";
+                        card.innerHTML = `
+                            <div class="flex justify-between items-start">
+                                <h4 class="font-bold truncate text-slate-800 pr-4">${doc.title || 'Untitled'}</h4>
+                                <button onclick="event.stopPropagation(); window.quickDelete('${doc.id}')" class="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-500 transition-all p-1">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </div>
+                        `;
+                        card.onclick = () => openEditor(doc.id, doc);
+                        grid.appendChild(card);
+                    });
+                }
+            });
+        }
 
         function loadDocByName(docName) {
             get(ref(db, 'docs')).then(s => {
                 const docs = s.val();
                 for (let id in docs) {
-                    if (docs[id].title === docName && (docs[id].publicView || (auth.currentUser && docs[id].owner === ADMIN_EMAIL))) {
+                    if (docs[id].title === docName && (docs[id].publicView || (auth.currentUser))) {
                         openEditor(id, docs[id]);
                         document.getElementById('login-screen').classList.add('hidden-fade');
                         return;
                     }
                 }
-                showToast('Document not found or private');
+                showToast('Document not found');
             });
         }
 
-        function loadDashboard() {
-            onValue(ref(db, 'docs'), (s) => {
-                const grid = document.getElementById('docs-grid');
-                grid.innerHTML = '';
-                const data = s.val();
-                if (!data) return;
-                for (let id in data) {
-                    if (data[id].owner === ADMIN_EMAIL) {
-                        const card = document.createElement('div');
-                        card.className = "bg-white p-8 rounded-3xl border border-slate-100 hover:border-blue-500 cursor-pointer shadow-sm hover:shadow-xl transition-all";
-                        card.innerHTML = `<h4 class="font-bold truncate text-slate-800">${data[id].title || 'Untitled'}</h4>`;
-                        card.onclick = () => openEditor(id, data[id]);
-                        grid.appendChild(card);
-                    }
-                }
-            });
-        }
-
+        // --- Editor Engine ---
         function openEditor(id, data) {
             currentDocId = id;
             currentDocTitle = data.title;
@@ -259,16 +330,14 @@
             document.getElementById('edit-title').value = data.title;
             editContent.innerHTML = data.content || '';
             
-            const isOwner = auth.currentUser && auth.currentUser.email === ADMIN_EMAIL;
+            const isOwner = auth.currentUser && (auth.currentUser.email === data.owner || auth.currentUser.email === ADMIN_EMAIL);
             editContent.contentEditable = isOwner;
             
             document.getElementById('admin-toolbar').classList.toggle('hidden', !isOwner);
             document.getElementById('admin-actions').classList.toggle('hidden', !isOwner);
-            document.getElementById('close-editor').classList.toggle('hidden', !isOwner);
-            document.getElementById('top-share-btn').classList.toggle('hidden', !isOwner);
             
             const statusBar = document.getElementById('status-bar');
-            statusBar.innerText = isOwner ? "Editing: OWNER" : "Viewing: GUEST";
+            statusBar.innerText = isOwner ? "Editing Enabled" : "Read-Only Mode";
             statusBar.className = isOwner ? "bg-blue-600 text-white px-6 py-1.5 text-[9px] font-black uppercase tracking-widest text-center" : "bg-slate-800 text-white px-6 py-1.5 text-[9px] font-black uppercase tracking-widest text-center";
 
             document.getElementById('public-toggle').checked = !!data.publicView;
@@ -287,12 +356,6 @@
             currentUnsub = onValue(ref(db, `docs/${id}`), (snap) => {
                 const d = snap.val();
                 if (!d || isTyping) return;
-                
-                document.getElementById('edit-title').value = d.title || '';
-                currentDocTitle = d.title;
-                document.getElementById('font-select').value = d.fontClass || 'font-sans';
-                editContent.className = `max-w-4xl mx-auto p-12 md:p-24 outline-none ${d.fontClass || 'font-sans'}`;
-                
                 if (d.content !== editContent.innerHTML) {
                     editContent.innerHTML = d.content || '';
                     updateCount();
@@ -304,17 +367,12 @@
         const save = () => {
             if (!currentDocId || !auth.currentUser) return;
             document.getElementById('save-indicator').innerText = "SAVING...";
-            const payload = {
+            update(ref(db, `docs/${currentDocId}`), {
                 title: document.getElementById('edit-title').value,
                 content: document.getElementById('edit-content').innerHTML,
                 fontClass: document.getElementById('font-select').value,
-                lastUpdatedAt: Date.now(),
                 publicView: document.getElementById('public-toggle').checked
-            };
-            update(ref(db, `docs/${currentDocId}`), payload).then(() => {
-                document.getElementById('save-indicator').innerText = "SAVED";
-                updateCount();
-            });
+            }).then(() => document.getElementById('save-indicator').innerText = "SAVED");
         };
 
         // --- Multimedia & Images ---
@@ -339,21 +397,12 @@
                 wrap.onmousedown = (e) => {
                     document.querySelectorAll('.resizable-img').forEach(el => el.classList.remove('selected'));
                     wrap.classList.add('selected');
-                    
                     if (e.target.classList.contains('resize-handle')) {
                         e.preventDefault();
                         const startX = e.clientX;
                         const startW = wrap.offsetWidth;
-                        
-                        const onMove = (mv) => { 
-                            const newWidth = startW + (mv.clientX - startX);
-                            wrap.style.width = newWidth + 'px'; 
-                        };
-                        const onUp = () => { 
-                            document.removeEventListener('mousemove', onMove); 
-                            document.removeEventListener('mouseup', onUp); 
-                            save(); 
-                        };
+                        const onMove = (mv) => wrap.style.width = (startW + (mv.clientX - startX)) + 'px';
+                        const onUp = () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); save(); };
                         document.addEventListener('mousemove', onMove);
                         document.addEventListener('mouseup', onUp);
                     }
@@ -361,30 +410,7 @@
             });
         }
 
-        document.getElementById('btn-link').onclick = () => {
-            openModal("Add Link", "Enter the URL (e.g., https://google.com)", true, (v) => {
-                if (v) document.execCommand('createLink', false, v);
-            });
-        };
-
-        function updateCount() {
-            const txt = document.getElementById('edit-content').innerText;
-            const words = txt.trim() ? txt.trim().split(/\s+/).length : 0;
-            document.getElementById('word-count').innerText = `${words} Words`;
-        }
-
-        // --- AI Enhancement ---
-        function getEnhancementPrompt(text, contentType) {
-            const prompts = {
-                email: `Enhance this email to be professional and clear. Return ONLY the enhanced text:\n\n${text}`,
-                essay: `Enhance this essay to be more articulate and academic. Return ONLY the enhanced text:\n\n${text}`,
-                blog: `Enhance this blog post to be more engaging. Return ONLY the enhanced text:\n\n${text}`,
-                formal: `Enhance this formal document to be precise. Return ONLY the enhanced text:\n\n${text}`,
-                notes: `Organize these notes clearly. Return ONLY the enhanced text:\n\n${text}`
-            };
-            return prompts[contentType] || `Improve this text for clarity. Return ONLY enhanced text:\n\n${text}`;
-        }
-
+        // --- AI ---
         async function enhanceTextWithAI() {
             if (aiProcessing) return;
             const sel = window.getSelection();
@@ -394,110 +420,76 @@
             document.getElementById('enhance-modal').classList.remove('hidden');
             const selectedType = await new Promise(resolve => {
                 const buttons = document.querySelectorAll('.enhance-type-btn');
-                const cleanUp = () => {
-                    buttons.forEach(b => b.onclick = null);
-                    document.getElementById('enhance-cancel').onclick = null;
-                    document.getElementById('enhance-modal').classList.add('hidden');
+                buttons.forEach(b => b.onclick = (e) => { 
+                    document.getElementById('enhance-modal').classList.add('hidden'); 
+                    resolve(e.target.dataset.type); 
+                });
+                document.getElementById('enhance-cancel').onclick = () => { 
+                    document.getElementById('enhance-modal').classList.add('hidden'); 
+                    resolve(null); 
                 };
-                buttons.forEach(b => b.onclick = (e) => { cleanUp(); resolve(e.target.dataset.type); });
-                document.getElementById('enhance-cancel').onclick = () => { cleanUp(); resolve(null); };
             });
 
             if (!selectedType) return;
-
             aiProcessing = true;
             const btn = document.getElementById('btn-ai-enhance');
-            const orig = btn.innerHTML;
-            btn.innerHTML = '<div class="spinner"></div>Enhancing...'; btn.disabled = true;
+            btn.innerHTML = '<div class="spinner"></div>Enhancing...';
 
             try {
-                const resp = await fetch(GROQ_API_URL, { 
-                    method:'POST', 
-                    headers:{'Authorization':`Bearer ${GROQ_API_KEY}`,'Content-Type':'application/json'},
-                    body: JSON.stringify({ 
-                        model:'llama-3.3-70b-versatile', 
-                        messages:[{role:'user',content:getEnhancementPrompt(text, selectedType)}], 
-                        max_tokens:800, 
-                        temperature:0.6 
+                const resp = await fetch(GROQ_API_URL, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${GROQ_API_KEY}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        model: 'llama-3.3-70b-versatile',
+                        messages: [{ role: 'user', content: `Enhance this as a ${selectedType}. Return ONLY enhanced text:\n\n${text}` }],
+                        temperature: 0.6
                     })
                 });
                 const data = await resp.json();
-                if(data.choices) {
+                if (data.choices) {
                     document.execCommand('insertText', false, data.choices[0].message.content.trim());
                     save();
-                    showToast(`Enhanced as ${selectedType}`);
                 }
-            } catch(e) { showToast('Enhance failed'); }
-            finally { aiProcessing = false; btn.innerHTML = orig; btn.disabled = false; }
+            } catch (e) { showToast('AI Error'); }
+            finally { aiProcessing = false; btn.innerHTML = 'Enhance'; }
         }
 
-        // --- Event Listeners ---
-        document.getElementById('edit-content').addEventListener('input', () => {
+        // --- Core Listeners ---
+        document.getElementById('btn-ai-enhance').onclick = enhanceTextWithAI;
+        document.getElementById('edit-content').oninput = () => {
             isTyping = true;
             updateCount();
             if (saveTimer) clearTimeout(saveTimer);
             saveTimer = setTimeout(() => { isTyping = false; save(); }, 1200);
-        });
-
-        document.getElementById('edit-title').addEventListener('input', () => {
-            if (saveTimer) clearTimeout(saveTimer);
-            saveTimer = setTimeout(save, 800);
-        });
-
-        document.getElementById('font-select').onchange = (e) => {
-            document.getElementById('edit-content').className = `max-w-4xl mx-auto p-12 md:p-24 outline-none ${e.target.value}`;
-            save();
         };
-
-        document.getElementById('btn-ai-enhance').onclick = enhanceTextWithAI;
+        document.getElementById('font-select').onchange = save;
+        document.getElementById('create-btn').onclick = () => {
+            const n = push(ref(db, 'docs'));
+            const d = { title: "Untitled Doc", content: "", owner: auth.currentUser.email, fontClass: 'font-sans', publicView: false };
+            set(n, d).then(() => openEditor(n.key, d));
+        };
         document.getElementById('login-btn').onclick = () => signInWithPopup(auth, provider);
         document.getElementById('logout-btn').onclick = () => signOut(auth).then(() => window.location.reload());
         document.getElementById('close-editor').onclick = () => { document.getElementById('editor-modal').classList.add('hidden'); window.history.pushState({}, '', '/'); };
-        
-        document.getElementById('create-btn').onclick = () => {
-            const n = push(ref(db, 'docs'));
-            const d = { title: "Untitled Doc", content: "", owner: ADMIN_EMAIL, fontClass: 'font-sans', publicView: false };
-            set(n, d).then(() => openEditor(n.key, d));
-        };
-
-        document.getElementById('export-pdf-btn').onclick = () => {
-            showToast("Generating PDF...");
-            const opt = { margin: 1, filename: `${document.getElementById('edit-title').value}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' } };
-            html2pdf().set(opt).from(document.getElementById('edit-content')).save();
-        };
-
-        const toggleShare = (e) => { e.stopPropagation(); document.getElementById('share-dropdown').classList.toggle('hidden'); };
-        document.getElementById('share-menu-btn').onclick = toggleShare;
-        document.getElementById('top-share-btn').onclick = toggleShare;
-
-        document.getElementById('public-toggle').onchange = (e) => {
-            update(ref(db, `docs/${currentDocId}`), { publicView: e.target.checked });
-            document.getElementById('copy-link-btn').classList.toggle('hidden', !e.target.checked);
-            showToast(e.target.checked ? "Document is now Public" : "Document is now Private");
-        };
-
+        document.getElementById('export-pdf-btn').onclick = () => html2pdf().from(document.getElementById('edit-content')).save();
+        document.getElementById('share-menu-btn').onclick = () => document.getElementById('share-dropdown').classList.toggle('hidden');
+        document.getElementById('top-share-btn').onclick = () => document.getElementById('share-dropdown').classList.toggle('hidden');
+        document.getElementById('public-toggle').onchange = save;
         document.getElementById('copy-link-btn').onclick = () => {
-            const link = `${window.location.origin}/${encodeURIComponent(currentDocTitle)}`;
-            navigator.clipboard.writeText(link);
-            showToast("Link copied to clipboard!");
+            navigator.clipboard.writeText(`${window.location.origin}/${encodeURIComponent(currentDocTitle)}`);
+            showToast("Copied!");
         };
-
         document.getElementById('delete-btn-trigger').onclick = () => {
-            openModal("Delete Document?", "This action is permanent.", false, () => {
+            openModal("Delete?", "Action is permanent.", false, () => {
                 remove(ref(db, `docs/${currentDocId}`));
                 document.getElementById('editor-modal').classList.add('hidden');
-                showToast("Deleted");
             });
         };
-
-        window.onclick = (e) => {
-            if (!e.target.closest('#share-menu-btn') && !e.target.closest('#top-share-btn') && !e.target.closest('#share-dropdown')) {
-                document.getElementById('share-dropdown').classList.add('hidden');
-            }
-            if (!e.target.closest('.resizable-img')) {
-                document.querySelectorAll('.resizable-img').forEach(el => el.classList.remove('selected'));
-            }
-        };
+        window.quickDelete = (id) => remove(ref(db, `docs/${id}`));
+        function updateCount() {
+            const t = document.getElementById('edit-content').innerText;
+            document.getElementById('word-count').innerText = (t.trim() ? t.trim().split(/\s+/).length : 0) + " Words";
+        }
     </script>
 </body>
 </html>
