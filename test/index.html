@@ -31,7 +31,12 @@
         .font-slab { font-family: 'Roboto Slab', serif; }
         .font-hand { font-family: 'Caveat', cursive; font-size: 1.4rem; }
 
-        .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(0,0,0,.15); border-radius: 50%; border-top-color: #000; animation: spin 0.8s linear infinite; margin-right: 6px; }
+        /* AI Sidebar Styles */
+        #ai-sidebar { transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        .sidebar-open { transform: translateX(0) !important; }
+        .ai-glow { box-shadow: 0 0 20px rgba(99, 102, 241, 0.2); }
+
+        .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(0,0,0,.15); border-radius: 50%; border-top-color: #6366f1; animation: spin 0.8s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
@@ -56,20 +61,6 @@
                 <button id="modal-cancel" class="text-slate-400 font-bold text-sm">Cancel</button>
                 <button id="modal-confirm" class="bg-blue-600 text-white px-6 py-2 rounded-xl font-bold text-sm">Confirm</button>
             </div>
-        </div>
-    </div>
-
-    <div id="enhance-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden z-[80] flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl">
-            <h3 class="text-xl font-bold text-slate-800 mb-6">Enhance as:</h3>
-            <div class="space-y-3">
-                <button class="enhance-type-btn w-full bg-slate-100 hover:bg-blue-100 text-slate-800 px-4 py-3 rounded-xl text-left font-semibold transition" data-type="email">Email</button>
-                <button class="enhance-type-btn w-full bg-slate-100 hover:bg-blue-100 text-slate-800 px-4 py-3 rounded-xl text-left font-semibold transition" data-type="essay">Essay</button>
-                <button class="enhance-type-btn w-full bg-slate-100 hover:bg-blue-100 text-slate-800 px-4 py-3 rounded-xl text-left font-semibold transition" data-type="blog">Blog Post</button>
-                <button class="enhance-type-btn w-full bg-slate-100 hover:bg-blue-100 text-slate-800 px-4 py-3 rounded-xl text-left font-semibold transition" data-type="formal">Formal Document</button>
-                <button class="enhance-type-btn w-full bg-slate-100 hover:bg-blue-100 text-slate-800 px-4 py-3 rounded-xl text-left font-semibold transition" data-type="notes">Notes</button>
-            </div>
-            <button id="enhance-cancel" class="w-full mt-4 text-slate-400 font-bold text-sm hover:text-slate-600">Cancel</button>
         </div>
     </div>
 
@@ -108,47 +99,91 @@
             </div>
             <div class="flex items-center gap-4">
                 <div id="save-indicator" class="text-[9px] font-black text-slate-400">SAVED</div>
-                <button id="top-share-btn" class="bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-bold transition hover:bg-blue-700">Share</button>
+                <button id="open-ai-btn" class="bg-indigo-100 text-indigo-600 px-4 py-2 rounded-xl text-xs font-bold transition hover:bg-indigo-200 border border-indigo-200">
+                    <i class="fas fa-sparkles mr-1"></i> Owen AI
+                </button>
                 <button id="export-pdf-btn" class="bg-slate-100 hover:bg-slate-200 px-5 py-2 rounded-xl text-xs font-bold text-slate-700 transition">PDF</button>
             </div>
         </div>
 
-        <div id="admin-toolbar" class="bg-slate-50 border-b p-2 flex flex-wrap gap-2 justify-center sticky top-0 z-20">
-            <select id="font-select" class="text-xs font-bold border rounded-lg px-3 bg-white outline-none">
-                <option value="font-sans">Modern Sans</option>
-                <option value="font-serif">Classic Serif</option>
-                <option value="font-mono">Mono Code</option>
-                <option value="font-slab">Roboto Slab</option>
-                <option value="font-hand">Handwritten</option>
-            </select>
-            <div class="w-px h-6 bg-slate-200 mx-2"></div>
-            <button onclick="document.execCommand('bold')" class="p-2 hover:bg-slate-200 rounded-lg"><i class="fas fa-bold"></i></button>
-            <button onclick="document.execCommand('italic')" class="p-2 hover:bg-slate-200 rounded-lg"><i class="fas fa-italic"></i></button>
-            <button id="btn-link" class="p-2 hover:bg-blue-50 text-blue-600 rounded-lg"><i class="fas fa-link"></i></button>
-            <button id="btn-image" class="p-2 hover:bg-emerald-50 text-emerald-600 rounded-lg"><i class="fas fa-image"></i> Image</button>
-            <div class="w-px h-6 bg-slate-200 mx-2"></div>
-            <button id="btn-ai-enhance" class="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-1 rounded-lg text-xs font-bold transition">Enhance</button>
-        </div>
+        <div class="flex flex-1 overflow-hidden relative">
+            <div class="flex-1 flex flex-col overflow-hidden">
+                <div id="admin-toolbar" class="bg-slate-50 border-b p-2 flex flex-wrap gap-2 justify-center sticky top-0 z-20">
+                    <select id="font-select" class="text-xs font-bold border rounded-lg px-3 bg-white outline-none">
+                        <option value="font-sans">Modern Sans</option>
+                        <option value="font-serif">Classic Serif</option>
+                        <option value="font-mono">Mono Code</option>
+                        <option value="font-slab">Roboto Slab</option>
+                        <option value="font-hand">Handwritten</option>
+                    </select>
+                    <div class="w-px h-6 bg-slate-200 mx-2"></div>
+                    <button onclick="document.execCommand('bold')" class="p-2 hover:bg-slate-200 rounded-lg"><i class="fas fa-bold"></i></button>
+                    <button onclick="document.execCommand('italic')" class="p-2 hover:bg-slate-200 rounded-lg"><i class="fas fa-italic"></i></button>
+                    <button id="btn-image" class="p-2 hover:bg-emerald-50 text-emerald-600 rounded-lg"><i class="fas fa-image"></i></button>
+                </div>
 
-        <div class="flex-1 overflow-y-auto bg-white" id="editor-container">
-            <div id="edit-content" contenteditable="true" class="max-w-4xl mx-auto p-12 md:p-24 outline-none"></div>
+                <div class="flex-1 overflow-y-auto bg-white" id="editor-container">
+                    <div id="edit-content" contenteditable="true" class="max-w-4xl mx-auto p-12 md:p-24 outline-none"></div>
+                </div>
+            </div>
+
+            <aside id="ai-sidebar" class="fixed right-0 top-0 bottom-0 w-80 bg-white border-l border-slate-200 translate-x-full z-[65] flex flex-col shadow-2xl">
+                <div class="p-6 border-b flex justify-between items-center bg-indigo-50/50">
+                    <div class="flex items-center gap-2">
+                        <div class="w-2 h-2 bg-indigo-500 rounded-full animate-pulse"></div>
+                        <span class="font-black text-xs uppercase tracking-widest text-indigo-900">Owen AI Assistant</span>
+                    </div>
+                    <button id="close-ai" class="text-slate-400 hover:text-slate-900"><i class="fas fa-times"></i></button>
+                </div>
+
+                <div id="ai-permission" class="flex-1 flex flex-col items-center justify-center p-8 text-center">
+                    <div class="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-3xl flex items-center justify-center text-2xl mb-4 ai-glow">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <h4 class="font-bold text-slate-800 mb-2">Connect Owen AI?</h4>
+                    <p class="text-xs text-slate-500 mb-6 leading-relaxed">This allows the AI to read your document and suggest smart improvements.</p>
+                    <button id="allow-ai-btn" class="w-full bg-indigo-600 text-white py-3 rounded-2xl font-bold shadow-lg hover:bg-indigo-700 transition active:scale-95">Allow Access</button>
+                </div>
+
+                <div id="ai-active" class="hidden flex-1 flex flex-col overflow-hidden">
+                    <div id="ai-context-box" class="p-4 bg-slate-50 border-b hidden">
+                        <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Selection Found</span>
+                        <p id="ai-selection-preview" class="text-[10px] text-slate-600 italic truncate mt-1"></p>
+                    </div>
+
+                    <div class="p-4 space-y-2 overflow-y-auto flex-1">
+                        <div class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Smart Edits</div>
+                        <button class="ai-task w-full text-left p-3 rounded-xl border border-slate-100 hover:border-indigo-300 hover:bg-indigo-50 transition group" data-prompt="Fix grammar and make it sound professional">
+                            <div class="text-xs font-bold text-slate-700 group-hover:text-indigo-700">Polished Professional</div>
+                            <div class="text-[10px] text-slate-500">Fix grammar & flow</div>
+                        </button>
+                        <button class="ai-task w-full text-left p-3 rounded-xl border border-slate-100 hover:border-indigo-300 hover:bg-indigo-50 transition group" data-prompt="Rewrite this to be very casual and friendly">
+                            <div class="text-xs font-bold text-slate-700 group-hover:text-indigo-700">Casual Vibe</div>
+                            <div class="text-[10px] text-slate-500">Friendly and simple</div>
+                        </button>
+                        <button class="ai-task w-full text-left p-3 rounded-xl border border-slate-100 hover:border-indigo-300 hover:bg-indigo-50 transition group" data-prompt="Expand on this idea with more detail">
+                            <div class="text-xs font-bold text-slate-700 group-hover:text-indigo-700">Expand Point</div>
+                            <div class="text-[10px] text-slate-500">Add more detail</div>
+                        </button>
+
+                        <div class="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-6 mb-3">Custom Ask</div>
+                        <textarea id="ai-custom-input" class="w-full p-3 text-xs border rounded-xl outline-none focus:ring-2 ring-indigo-500 resize-none" rows="3" placeholder="Tell Owen AI what to do..."></textarea>
+                        <button id="ai-run-custom" class="w-full bg-slate-900 text-white py-2 rounded-xl text-xs font-bold">Process Request</button>
+                    </div>
+
+                    <div id="ai-loading" class="hidden p-4 text-center border-t">
+                        <div class="spinner mr-2"></div>
+                        <span class="text-[10px] font-bold text-indigo-600 uppercase">Owen is thinking...</span>
+                    </div>
+                </div>
+            </aside>
         </div>
 
         <div id="editor-footer" class="p-4 border-t flex justify-between items-center bg-slate-50 px-8">
             <div id="admin-actions" class="flex gap-4">
-                <div class="relative group">
-                    <button id="share-menu-btn" class="bg-blue-600 text-white px-6 py-2 rounded-xl text-xs font-bold uppercase tracking-widest shadow-md">Access</button>
-                    <div id="share-dropdown" class="hidden absolute bottom-full mb-3 left-0 w-64 bg-white border border-slate-100 shadow-2xl rounded-2xl p-6">
-                        <div class="flex items-center justify-between mb-4">
-                            <span class="text-xs font-black uppercase text-slate-400">Public Link</span>
-                            <input type="checkbox" id="public-toggle" class="w-5 h-5 accent-blue-600">
-                        </div>
-                        <button id="copy-link-btn" class="hidden w-full bg-blue-50 text-blue-600 text-[10px] py-3 rounded-xl font-black uppercase tracking-tighter border border-blue-100">Copy Link</button>
-                    </div>
-                </div>
                 <button id="delete-btn-trigger" class="text-slate-300 hover:text-red-500 p-2 transition"><i class="fas fa-trash-can"></i></button>
+                <div id="word-count" class="text-[9px] font-black text-slate-400 uppercase tracking-widest self-center">0 Words</div>
             </div>
-            <div id="word-count" class="text-[9px] font-black text-slate-400 uppercase tracking-widest">0 Words</div>
         </div>
     </div>
 
@@ -171,18 +206,18 @@
         const auth = getAuth(app);
         const db = getDatabase(app);
         const provider = new GoogleAuthProvider();
+        
         const ADMIN_EMAIL = 'imcrabfr@gmail.com';
         const GROQ_API_KEY = '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';
         const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
         
         let currentDocId = null;
         let currentDocTitle = null;
-        let currentUnsub = null;
         let isTyping = false;
         let saveTimer = null;
-        let aiProcessing = false;
+        let aiAllowed = false;
 
-        // --- Utils ---
+        // --- Core Functions ---
         function showToast(m) {
             const c = document.getElementById('toast-container');
             const t = document.createElement('div');
@@ -192,71 +227,106 @@
             setTimeout(() => t.remove(), 3000);
         }
 
-        function openModal(title, desc, input, onConfirm) {
-            const m = document.getElementById('custom-modal');
-            const i = document.getElementById('modal-input');
-            document.getElementById('modal-title').innerText = title;
-            document.getElementById('modal-desc').innerText = desc;
-            i.classList.toggle('hidden', !input);
-            m.classList.remove('hidden');
-            document.getElementById('modal-confirm').onclick = () => { onConfirm(i.value); m.classList.add('hidden'); };
-            document.getElementById('modal-cancel').onclick = () => m.classList.add('hidden');
+        // --- AI Sidebar Logic ---
+        const aiSidebar = document.getElementById('ai-sidebar');
+        const aiPermission = document.getElementById('ai-permission');
+        const aiActive = document.getElementById('ai-active');
+
+        document.getElementById('open-ai-btn').onclick = () => {
+            aiSidebar.classList.add('sidebar-open');
+            checkSelection();
+        };
+
+        document.getElementById('close-ai').onclick = () => {
+            aiSidebar.classList.remove('sidebar-open');
+        };
+
+        document.getElementById('allow-ai-btn').onclick = () => {
+            aiAllowed = true;
+            aiPermission.classList.add('hidden');
+            aiActive.classList.remove('hidden');
+            showToast("Owen AI Initialized");
+        };
+
+        function checkSelection() {
+            const selection = window.getSelection().toString().trim();
+            const contextBox = document.getElementById('ai-context-box');
+            const preview = document.getElementById('ai-selection-preview');
+            
+            if (selection.length > 0) {
+                contextBox.classList.remove('hidden');
+                preview.innerText = `"${selection}"`;
+            } else {
+                contextBox.classList.add('hidden');
+            }
         }
 
-        function getDocNameFromUrl() {
-            const path = window.location.pathname;
-            const match = path.match(/\/([^/]+)\/?$/);
-            return match ? decodeURIComponent(match[1]) : null;
+        async function callOwenAI(prompt) {
+            const selection = window.getSelection().toString().trim();
+            const fullContent = document.getElementById('edit-content').innerText;
+            
+            // Context logic: use selection if available, otherwise whole doc
+            const targetText = selection || fullContent;
+            if (!targetText || targetText.length < 2) {
+                showToast("Nothing to work with!");
+                return;
+            }
+
+            document.getElementById('ai-loading').classList.remove('hidden');
+            
+            try {
+                const resp = await fetch(GROQ_API_URL, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${GROQ_API_KEY}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        model: 'llama-3.3-70b-versatile',
+                        messages: [
+                            { role: 'system', content: "You are Owen AI, a helpful writing assistant. Return ONLY the edited/requested text without preamble or quotes." },
+                            { role: 'user', content: `${prompt}:\n\n${targetText}` }
+                        ],
+                        temperature: 0.5
+                    })
+                });
+                
+                const data = await resp.json();
+                const result = data.choices[0].message.content.trim();
+                
+                if (selection) {
+                    document.execCommand('insertText', false, result);
+                } else {
+                    document.getElementById('edit-content').innerText = result;
+                }
+                
+                save();
+                showToast("Owen AI Finished!");
+            } catch (e) {
+                showToast("AI Error: Check Connection");
+            } finally {
+                document.getElementById('ai-loading').classList.add('hidden');
+            }
         }
 
-        // --- Auth & Multi-User Management ---
+        document.querySelectorAll('.ai-task').forEach(btn => {
+            btn.onclick = () => callOwenAI(btn.dataset.prompt);
+        });
+
+        document.getElementById('ai-run-custom').onclick = () => {
+            const custom = document.getElementById('ai-custom-input').value;
+            if (custom) callOwenAI(custom);
+        };
+
+        // --- Standard Doc Logic ---
         onAuthStateChanged(auth, async (user) => {
-            const urlDocName = getDocNameFromUrl();
             if (user) {
                 const isAdmin = user.email === ADMIN_EMAIL;
-                const allowedSnap = await get(ref(db, 'allowedUsers'));
-                const allowedList = Object.values(allowedSnap.val() || {});
-                const isAllowed = isAdmin || allowedList.includes(user.email);
-
-                if (isAllowed) {
-                    document.getElementById('login-screen').classList.add('hidden-fade');
-                    document.getElementById('main-nav').classList.remove('hidden');
-                    document.getElementById('dashboard').classList.remove('hidden');
-                    if (isAdmin) {
-                        document.getElementById('admin-management').classList.remove('hidden');
-                        loadAllowedUsers();
-                    }
-                    loadDashboard(user.email, isAdmin);
-                    if (urlDocName && !['index.html', ''].includes(urlDocName)) loadDocByName(urlDocName);
-                } else {
-                    showToast("Access Denied: " + user.email);
-                    signOut(auth);
-                }
-            } else if (urlDocName && !['index.html', ''].includes(urlDocName)) {
-                loadDocByName(urlDocName);
+                document.getElementById('login-screen').classList.add('hidden-fade');
+                document.getElementById('main-nav').classList.remove('hidden');
+                document.getElementById('dashboard').classList.remove('hidden');
+                loadDashboard(user.email, isAdmin);
             } else {
                 document.getElementById('login-screen').classList.remove('hidden-fade');
             }
         });
-
-        function loadAllowedUsers() {
-            onValue(ref(db, 'allowedUsers'), (snap) => {
-                const list = document.getElementById('allowed-users-list');
-                list.innerHTML = '';
-                Object.entries(snap.val() || {}).forEach(([key, email]) => {
-                    const tag = document.createElement('div');
-                    tag.className = "bg-slate-100 text-slate-600 px-3 py-1 rounded-full text-[10px] font-bold flex items-center gap-2";
-                    tag.innerHTML = `${email} <i class="fas fa-times cursor-pointer hover:text-red-500" onclick="window.removeUser('${key}')"></i>`;
-                    list.appendChild(tag);
-                });
-            });
-        }
-        window.removeUser = (key) => remove(ref(db, `allowedUsers/${key}`));
-        document.getElementById('add-user-btn').onclick = () => {
-            const i = document.getElementById('new-user-email');
-            if (i.value.trim()) push(ref(db, 'allowedUsers'), i.value.trim());
-            i.value = '';
-        };
 
         function loadDashboard(userEmail, isAdmin) {
             onValue(ref(db, 'docs'), (s) => {
@@ -264,225 +334,52 @@
                 container.innerHTML = '';
                 const data = s.val() || {};
                 
-                const groups = {};
                 for (let id in data) {
                     const doc = data[id];
                     if (isAdmin || doc.owner === userEmail) {
-                        const ownerKey = doc.owner || 'Legacy';
-                        if (!groups[ownerKey]) groups[ownerKey] = [];
-                        groups[ownerKey].push({ id, ...doc });
-                    }
-                }
-
-                for (let owner in groups) {
-                    const section = document.createElement('div');
-                    const sectionTitle = owner === userEmail ? "My Projects" : `User: ${owner}`;
-                    const gridId = `grid-${owner.replace(/[@.]/g, '')}`;
-
-                    section.innerHTML = `
-                        <h4 class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-6 border-b pb-2">${sectionTitle}</h4>
-                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="${gridId}"></div>
-                    `;
-                    container.appendChild(section);
-
-                    const grid = section.querySelector(`#${gridId}`);
-                    groups[owner].forEach(doc => {
                         const card = document.createElement('div');
-                        card.className = "group bg-white p-8 rounded-3xl border border-slate-100 hover:border-blue-500 cursor-pointer shadow-sm hover:shadow-xl transition-all";
-                        card.innerHTML = `
-                            <div class="flex justify-between items-start">
-                                <h4 class="font-bold truncate text-slate-800 pr-4">${doc.title || 'Untitled'}</h4>
-                                <button onclick="event.stopPropagation(); window.quickDelete('${doc.id}')" class="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-500 transition-all p-1">
-                                    <i class="fas fa-trash-alt"></i>
-                                </button>
-                            </div>
-                        `;
-                        card.onclick = () => openEditor(doc.id, doc);
-                        grid.appendChild(card);
-                    });
-                }
-            });
-        }
-
-        function loadDocByName(docName) {
-            get(ref(db, 'docs')).then(s => {
-                const docs = s.val();
-                for (let id in docs) {
-                    if (docs[id].title === docName && (docs[id].publicView || (auth.currentUser))) {
-                        openEditor(id, docs[id]);
-                        document.getElementById('login-screen').classList.add('hidden-fade');
-                        return;
+                        card.className = "bg-white p-8 rounded-3xl border border-slate-100 hover:border-blue-500 cursor-pointer shadow-sm transition-all";
+                        card.innerHTML = `<h4 class="font-bold truncate text-slate-800">${doc.title || 'Untitled'}</h4>`;
+                        card.onclick = () => openEditor(id, doc);
+                        container.appendChild(card);
                     }
                 }
-                showToast('Document not found');
             });
         }
 
-        // --- Editor Engine ---
         function openEditor(id, data) {
             currentDocId = id;
-            currentDocTitle = data.title;
-            const editContent = document.getElementById('edit-content');
-            
             document.getElementById('edit-title').value = data.title;
-            editContent.innerHTML = data.content || '';
-            
-            const isOwner = auth.currentUser && (auth.currentUser.email === data.owner || auth.currentUser.email === ADMIN_EMAIL);
-            editContent.contentEditable = isOwner;
-            
-            document.getElementById('admin-toolbar').classList.toggle('hidden', !isOwner);
-            document.getElementById('admin-actions').classList.toggle('hidden', !isOwner);
-            
-            const statusBar = document.getElementById('status-bar');
-            statusBar.innerText = isOwner ? "Editing Enabled" : "Read-Only Mode";
-            statusBar.className = isOwner ? "bg-blue-600 text-white px-6 py-1.5 text-[9px] font-black uppercase tracking-widest text-center" : "bg-slate-800 text-white px-6 py-1.5 text-[9px] font-black uppercase tracking-widest text-center";
-
-            document.getElementById('public-toggle').checked = !!data.publicView;
-            document.getElementById('copy-link-btn').classList.toggle('hidden', !data.publicView);
-            
-            editContent.className = `max-w-4xl mx-auto p-12 md:p-24 outline-none ${data.fontClass || 'font-sans'}`;
-            document.getElementById('font-select').value = data.fontClass || 'font-sans';
-            
+            document.getElementById('edit-content').innerHTML = data.content || '';
             document.getElementById('editor-modal').classList.remove('hidden');
-            window.history.pushState({}, '', `/${encodeURIComponent(data.title)}`);
-            
-            attachImageListeners();
             updateCount();
-
-            if (currentUnsub) currentUnsub();
-            currentUnsub = onValue(ref(db, `docs/${id}`), (snap) => {
-                const d = snap.val();
-                if (!d || isTyping) return;
-                if (d.content !== editContent.innerHTML) {
-                    editContent.innerHTML = d.content || '';
-                    updateCount();
-                    attachImageListeners();
-                }
-            });
         }
 
         const save = () => {
-            if (!currentDocId || !auth.currentUser) return;
+            if (!currentDocId) return;
             document.getElementById('save-indicator').innerText = "SAVING...";
             update(ref(db, `docs/${currentDocId}`), {
                 title: document.getElementById('edit-title').value,
-                content: document.getElementById('edit-content').innerHTML,
-                fontClass: document.getElementById('font-select').value,
-                publicView: document.getElementById('public-toggle').checked
+                content: document.getElementById('edit-content').innerHTML
             }).then(() => document.getElementById('save-indicator').innerText = "SAVED");
         };
 
-        // --- Multimedia & Images ---
-        document.getElementById('btn-image').onclick = () => document.getElementById('image-input').click();
-        document.getElementById('image-input').onchange = (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (ev) => {
-                    const html = `<div class="resizable-img" contenteditable="false"><img src="${ev.target.result}"><div class="resize-handle"></div></div><p><br></p>`;
-                    document.getElementById('edit-content').focus();
-                    document.execCommand('insertHTML', false, html);
-                    attachImageListeners();
-                    save();
-                };
-                reader.readAsDataURL(file);
-            }
-        };
-
-        function attachImageListeners() {
-            document.querySelectorAll('.resizable-img').forEach(wrap => {
-                wrap.onmousedown = (e) => {
-                    document.querySelectorAll('.resizable-img').forEach(el => el.classList.remove('selected'));
-                    wrap.classList.add('selected');
-                    if (e.target.classList.contains('resize-handle')) {
-                        e.preventDefault();
-                        const startX = e.clientX;
-                        const startW = wrap.offsetWidth;
-                        const onMove = (mv) => wrap.style.width = (startW + (mv.clientX - startX)) + 'px';
-                        const onUp = () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); save(); };
-                        document.addEventListener('mousemove', onMove);
-                        document.addEventListener('mouseup', onUp);
-                    }
-                };
-            });
-        }
-
-        // --- AI ---
-        async function enhanceTextWithAI() {
-            if (aiProcessing) return;
-            const sel = window.getSelection();
-            const text = sel.toString().trim();
-            if (!text) { showToast('Select text first'); return; }
-
-            document.getElementById('enhance-modal').classList.remove('hidden');
-            const selectedType = await new Promise(resolve => {
-                const buttons = document.querySelectorAll('.enhance-type-btn');
-                buttons.forEach(b => b.onclick = (e) => { 
-                    document.getElementById('enhance-modal').classList.add('hidden'); 
-                    resolve(e.target.dataset.type); 
-                });
-                document.getElementById('enhance-cancel').onclick = () => { 
-                    document.getElementById('enhance-modal').classList.add('hidden'); 
-                    resolve(null); 
-                };
-            });
-
-            if (!selectedType) return;
-            aiProcessing = true;
-            const btn = document.getElementById('btn-ai-enhance');
-            btn.innerHTML = '<div class="spinner"></div>Enhancing...';
-
-            try {
-                const resp = await fetch(GROQ_API_URL, {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${GROQ_API_KEY}`, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        model: 'llama-3.3-70b-versatile',
-                        messages: [{ role: 'user', content: `Enhance this as a ${selectedType}. Return ONLY enhanced text:\n\n${text}` }],
-                        temperature: 0.6
-                    })
-                });
-                const data = await resp.json();
-                if (data.choices) {
-                    document.execCommand('insertText', false, data.choices[0].message.content.trim());
-                    save();
-                }
-            } catch (e) { showToast('AI Error'); }
-            finally { aiProcessing = false; btn.innerHTML = 'Enhance'; }
-        }
-
-        // --- Core Listeners ---
-        document.getElementById('btn-ai-enhance').onclick = enhanceTextWithAI;
         document.getElementById('edit-content').oninput = () => {
-            isTyping = true;
             updateCount();
             if (saveTimer) clearTimeout(saveTimer);
-            saveTimer = setTimeout(() => { isTyping = false; save(); }, 1200);
+            saveTimer = setTimeout(save, 1000);
         };
-        document.getElementById('font-select').onchange = save;
+
         document.getElementById('create-btn').onclick = () => {
             const n = push(ref(db, 'docs'));
-            const d = { title: "Untitled Doc", content: "", owner: auth.currentUser.email, fontClass: 'font-sans', publicView: false };
+            const d = { title: "New Doc", content: "", owner: auth.currentUser.email };
             set(n, d).then(() => openEditor(n.key, d));
         };
+
         document.getElementById('login-btn').onclick = () => signInWithPopup(auth, provider);
         document.getElementById('logout-btn').onclick = () => signOut(auth).then(() => window.location.reload());
-        document.getElementById('close-editor').onclick = () => { document.getElementById('editor-modal').classList.add('hidden'); window.history.pushState({}, '', '/'); };
-        document.getElementById('export-pdf-btn').onclick = () => html2pdf().from(document.getElementById('edit-content')).save();
-        document.getElementById('share-menu-btn').onclick = () => document.getElementById('share-dropdown').classList.toggle('hidden');
-        document.getElementById('top-share-btn').onclick = () => document.getElementById('share-dropdown').classList.toggle('hidden');
-        document.getElementById('public-toggle').onchange = save;
-        document.getElementById('copy-link-btn').onclick = () => {
-            navigator.clipboard.writeText(`${window.location.origin}/${encodeURIComponent(currentDocTitle)}`);
-            showToast("Copied!");
-        };
-        document.getElementById('delete-btn-trigger').onclick = () => {
-            openModal("Delete?", "Action is permanent.", false, () => {
-                remove(ref(db, `docs/${currentDocId}`));
-                document.getElementById('editor-modal').classList.add('hidden');
-            });
-        };
-        window.quickDelete = (id) => remove(ref(db, `docs/${id}`));
+        document.getElementById('close-editor').onclick = () => document.getElementById('editor-modal').classList.add('hidden');
+
         function updateCount() {
             const t = document.getElementById('edit-content').innerText;
             document.getElementById('word-count').innerText = (t.trim() ? t.trim().split(/\s+/).length : 0) + " Words";
